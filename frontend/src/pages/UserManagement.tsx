@@ -1,0 +1,417 @@
+import React, { useEffect, useState } from 'react';
+import api from '../services/api';
+import type { UsuarioBackend, Rol } from '../types';
+import { 
+  Users, UserPlus, Shield, Mail, CheckCircle2, 
+  AlertCircle, X, Camera, Lock, User as UserIcon, RefreshCw
+} from 'lucide-react';
+
+export const UserManagement: React.FC = () => {
+  const [usuarios, setUsuarios] = useState<UsuarioBackend[]>([]);
+  const [roles, setRoles] = useState<Rol[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Modal para nuevo usuario
+  const [showModal, setShowModal] = useState(false);
+  const [nombreCompleto, setNombreCompleto] = useState('');
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [idRol, setIdRol] = useState<number>(2); // Delegado por defecto
+  const [password, setPassword] = useState('');
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
+
+  // Validación de contraseña en tiempo real (Políticas heredadas de Java: 8-25 chars, alfanumérico + ñ/Ñ)
+  const isPasswordLengthValid = password.length >= 8 && password.length <= 25;
+  const isPasswordRegexValid = /^[a-zA-Z0-9ñÑ]+$/.test(password);
+  const isPasswordValid = isPasswordLengthValid && isPasswordRegexValid;
+
+  const cargarDatos = async () => {
+    setLoading(true);
+    try {
+      const [resUsers, resRoles] = await Promise.all([
+        api.get('/usuarios'),
+        api.get('/roles'),
+      ]);
+
+      if (resUsers.data.success) {
+        setUsuarios(resUsers.data.usuarios || []);
+      }
+      if (resRoles.data.success) {
+        setRoles(resRoles.data.roles || []);
+      }
+    } catch (err) {
+      console.error('Error al cargar usuarios:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFotoFile(file);
+      setFotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleCrearUsuario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    setFormSuccess('');
+
+    // Validación preventiva en frontend con mensajes claros en español
+    if (!nombreCompleto.trim() || !email.trim() || !username.trim()) {
+      setFormError('Todos los campos son obligatorios.');
+      return;
+    }
+
+    if (!isPasswordValid) {
+      setFormError('La contraseña no cumple con la política de seguridad (8-25 caracteres alfanuméricos, sin símbolos).');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append('nombre_completo', nombreCompleto.trim());
+      formData.append('email', email.trim());
+      formData.append('username', username.trim());
+      formData.append('id_rol', idRol.toString());
+      formData.append('password', password);
+      if (fotoFile) {
+        formData.append('foto', fotoFile);
+      }
+
+      const res = await api.post('/usuarios', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (res.data.success) {
+        setFormSuccess('Usuario registrado exitosamente.');
+        // Limpiar formulario
+        setNombreCompleto('');
+        setEmail('');
+        setUsername('');
+        setPassword('');
+        setFotoFile(null);
+        setFotoPreview(null);
+        await cargarDatos();
+        setTimeout(() => {
+          setShowModal(false);
+          setFormSuccess('');
+        }, 1200);
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      if (error.response?.data?.errors) {
+        const firstErr = Object.values(error.response.data.errors)[0][0];
+        setFormError(firstErr);
+      } else {
+        setFormError(error.response?.data?.message || 'Error al crear usuario.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getRolBadgeColor = (rolId: number) => {
+    switch (rolId) {
+      case 1: // Director
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-300';
+      case 2: // Delegado
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-300';
+      case 3: // Invitado
+      default:
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Encabezado */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Users className="w-7 h-7 text-primary" />
+            <h1 className="text-2xl font-bold">Gestión de Usuarios y Roles</h1>
+          </div>
+          <p className="text-xs opacity-60 mt-1">
+            Caso de Uso 1 (CU1): Administración de cuentas académicas, asignación de roles y control de acceso.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={cargarDatos}
+            className="p-2 rounded-lg border hover:opacity-80 transition-opacity"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+            title="Recargar usuarios"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:opacity-90 shadow-sm"
+          >
+            <UserPlus className="w-4 h-4" />
+            Nuevo Usuario
+          </button>
+        </div>
+      </div>
+
+      {/* Grid de Usuarios Registrados */}
+      {loading ? (
+        <div className="p-12 text-center text-xs opacity-60">Cargando catálogo de usuarios...</div>
+      ) : usuarios.length === 0 ? (
+        <div className="p-12 text-center text-xs opacity-60">No hay usuarios registrados.</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {usuarios.map((u) => {
+            const fotoUrl = u.foto_ruta ? `/storage/${u.foto_ruta}` : null;
+            return (
+              <div
+                key={u.id}
+                className="p-5 rounded-2xl border flex items-start gap-4 transition-all hover:shadow-md"
+                style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+              >
+                {/* Foto / Avatar */}
+                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary/20 flex-shrink-0 bg-black/5 dark:bg-white/5 flex items-center justify-center">
+                  {fotoUrl ? (
+                    <img
+                      src={fotoUrl}
+                      alt={u.nombre_completo}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback a ícono si la imagen no carga
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <UserIcon className="w-7 h-7 opacity-40" />
+                  )}
+                </div>
+
+                {/* Datos del Usuario */}
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <h3 className="font-bold text-sm truncate" title={u.nombre_completo}>
+                      {u.nombre_completo}
+                    </h3>
+                  </div>
+
+                  <div className="text-xs opacity-60 flex items-center gap-1 font-mono truncate">
+                    <span>@{u.username}</span>
+                  </div>
+
+                  <div className="text-xs opacity-60 flex items-center gap-1.5 truncate">
+                    <Mail className="w-3.5 h-3.5 flex-shrink-0 opacity-40" />
+                    <span className="truncate">{u.email}</span>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${getRolBadgeColor(u.id_rol)}`}>
+                      <Shield className="w-3 h-3" />
+                      {u.rol?.nombre || 'Usuario'}
+                    </span>
+                    <span className="text-[10px] opacity-40">
+                      ID #{u.id}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal para Crear Usuario */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div
+            className="w-full max-w-lg rounded-2xl border shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+          >
+            <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-base">Registrar Nuevo Usuario Académico</h3>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+              >
+                <X className="w-5 h-5 opacity-60" />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            {formSuccess && (
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>{formSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCrearUsuario} className="space-y-4 text-xs">
+              {/* Carga de Fotografía */}
+              <div className="flex items-center gap-4 p-3 rounded-xl border border-dashed"
+                style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}>
+                <div className="w-16 h-16 rounded-full overflow-hidden border bg-black/5 dark:bg-white/5 flex items-center justify-center flex-shrink-0">
+                  {fotoPreview ? (
+                    <img src={fotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="w-6 h-6 opacity-40" />
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <label className="block font-semibold">Fotografía de Perfil (Opcional)</label>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={handleFotoChange}
+                    className="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-primary file:text-white hover:file:opacity-80 cursor-pointer"
+                  />
+                  <span className="text-[10px] opacity-50 block">Formatos: JPG, PNG, WebP (máx. 2MB).</span>
+                </div>
+              </div>
+
+              {/* Nombre Completo */}
+              <div>
+                <label className="block font-semibold mb-1">Nombre Completo *</label>
+                <input
+                  type="text"
+                  value={nombreCompleto}
+                  onChange={(e) => setNombreCompleto(e.target.value)}
+                  placeholder="Ej. Ing. Evans Balcázar Veizaga"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                  required
+                />
+              </div>
+
+              {/* Correo y Nombre de Usuario */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold mb-1">Correo Electrónico *</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="usuario@uagrm.edu.bo"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Nombre de Usuario (Username) *</label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="ebalcazar"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Rol Académico (CU1, Req. 2) */}
+              <div>
+                <label className="block font-semibold mb-1">Rol de Acceso al Negocio *</label>
+                <select
+                  value={idRol}
+                  onChange={(e) => setIdRol(Number(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                >
+                  {roles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.nombre} {r.descripcion ? `— ${r.descripcion}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Contraseña con Reglas Estrictas */}
+              <div className="space-y-1">
+                <label className="block font-semibold mb-1 flex items-center justify-between">
+                  <span>Contraseña de Acceso *</span>
+                  <span className="text-[10px] opacity-60 flex items-center gap-1 font-normal">
+                    <Lock className="w-3 h-3" /> Regla institucional estricta
+                  </span>
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="8 a 25 caracteres alfanuméricos"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none ${
+                    password ? (isPasswordValid ? 'border-emerald-500' : 'border-rose-500') : ''
+                  }`}
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: password ? undefined : 'var(--border-color)' }}
+                  required
+                />
+
+                {/* Guía de validación en tiempo real */}
+                <div className="p-2.5 rounded-lg bg-black/5 dark:bg-white/5 space-y-1 text-[11px]">
+                  <div className={`flex items-center gap-1.5 ${isPasswordLengthValid ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Longitud entre 8 y 25 caracteres ({password.length}/25)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${isPasswordRegexValid && password.length > 0 ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Solo letras (a-z, A-Z), números (0-9) y letra ñ/Ñ (sin símbolos ni espacios)
+                  </div>
+                </div>
+              </div>
+
+              {/* Botones */}
+              <div className="flex justify-end gap-3 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 border rounded-lg hover:opacity-80"
+                  style={{ borderColor: 'var(--border-color)' }}
+                  disabled={saving}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || !isPasswordValid}
+                  className="px-5 py-2 bg-primary text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-40 flex items-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Guardando...
+                    </>
+                  ) : (
+                    'Registrar Usuario'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
