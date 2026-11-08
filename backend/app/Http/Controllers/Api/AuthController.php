@@ -33,7 +33,16 @@ class AuthController extends Controller
             ->orWhere('username', $loginInput)
             ->first();
 
-        if (!$user || !Hash::check($password, $user->password)) {
+        $storedHash = $user?->password_hash ?? $user?->password;
+        $passwordValid = false;
+
+        if ($storedHash) {
+            if (hash('sha256', $password) === $storedHash || Hash::check($password, $storedHash)) {
+                $passwordValid = true;
+            }
+        }
+
+        if (!$user || !$passwordValid) {
             $this->auditService->registrarLoginFallido($loginInput, $request, 'Credenciales incorrectas');
             return response()->json([
                 'success' => false,
@@ -186,6 +195,56 @@ class AuthController extends Controller
             'message' => 'Usuario registrado exitosamente.',
             'usuario' => $user->load('rol'),
         ], 201);
+    }
+
+    /**
+     * Actualizar perfil del usuario autenticado (CU1: cada usuario solo edita su propio perfil).
+     */
+    public function actualizarPerfil(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'nombre_completo' => 'nullable|string|max:120',
+            'password' => 'nullable|string|min:8|max:25|regex:/^[a-zA-Z0-9ñÑ]+$/',
+            'foto' => 'nullable|image|max:2048',
+        ], [
+            'nombre_completo.max' => 'El nombre no puede exceder los 120 caracteres.',
+            'password.min' => 'La contraseña debe contener al menos 8 caracteres.',
+            'password.max' => 'La contraseña no puede exceder los 25 caracteres.',
+            'password.regex' => 'La contraseña solo permite caracteres alfanuméricos y la letra ñ/Ñ (sin símbolos).',
+            'foto.image' => 'El archivo seleccionado debe ser una imagen válida.',
+            'foto.max' => 'La imagen no debe superar los 2 MB.',
+        ]);
+
+        if ($request->filled('nombre_completo')) {
+            $user->nombre_completo = trim($request->input('nombre_completo'));
+        }
+
+        if ($request->filled('password')) {
+            $user->password_hash = hash('sha256', $request->input('password'));
+        }
+
+        if ($request->hasFile('foto')) {
+            $fotoRuta = $request->file('foto')->store('fotos', 'public');
+            $user->foto_ruta = $fotoRuta;
+        }
+
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Perfil actualizado exitosamente.',
+            'user' => [
+                'id' => $user->id,
+                'nombreCompleto' => $user->nombre_completo,
+                'email' => $user->email,
+                'username' => $user->username,
+                'fotoRuta' => $user->foto_ruta,
+                'rol' => $user->rol?->nombre,
+                'idRol' => $user->id_rol,
+            ],
+        ]);
     }
 }
 

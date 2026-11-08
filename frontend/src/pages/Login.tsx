@@ -41,7 +41,7 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center p-4 transition-colors relative"
       style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}
     >
@@ -61,7 +61,7 @@ export const Login: React.FC = () => {
         </button>
       </div>
 
-      <div 
+      <div
         className="w-full max-w-md p-8 rounded-2xl border shadow-xl transition-all"
         style={{
           backgroundColor: 'var(--bg-card)',
@@ -164,30 +164,30 @@ export const Login: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setTestAccount('luis.ecv1111@gmail.com', 'Admin2026ñ')}
+              onClick={() => setTestAccount('cmarca', 'carlos123')}
               className="p-1.5 border rounded hover:opacity-80 transition text-left"
               style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
             >
-              <div className="font-bold text-blue-500">Luis Fernando</div>
+              <div className="font-bold text-blue-500">Carlos Marca</div>
+              <div className="opacity-60 text-[10px]">cmarca / carlos123</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTestAccount('luisecv', 'Admin2026ñ')}
+              className="p-1.5 border rounded hover:opacity-80 transition text-left"
+              style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+            >
+              <div className="font-bold text-purple-500">Luis Fernando</div>
               <div className="opacity-60 text-[10px]">luisecv / Admin2026ñ</div>
             </button>
             <button
               type="button"
-              onClick={() => setTestAccount('croca', 'Delegado2026ñ')}
+              onClick={() => setTestAccount('tvalda', 'Admin2026ñ')}
               className="p-1.5 border rounded hover:opacity-80 transition text-left"
               style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
             >
-              <div className="font-bold text-purple-500">Delegado Curricular</div>
-              <div className="opacity-60 text-[10px]">croca / Delegado2026ñ</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTestAccount('mmendoza', 'Invitado2026ñ')}
-              className="p-1.5 border rounded hover:opacity-80 transition text-left"
-              style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
-            >
-              <div className="font-bold text-emerald-500">Docente Invitado</div>
-              <div className="opacity-60 text-[10px]">mmendoza / Invitado2026ñ</div>
+              <div className="font-bold text-emerald-500">Tania Valda</div>
+              <div className="opacity-60 text-[10px]">tvalda / Admin2026ñ</div>
             </button>
           </div>
         </div>

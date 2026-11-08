@@ -10,6 +10,7 @@ interface AuthContextProps {
   login: (login: string, pass: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   refreshMenu: () => Promise<void>;
+  updateUser: (updatedUser: User) => void;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -24,8 +25,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return localStorage.getItem('token');
   });
 
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    const saved = localStorage.getItem('menuItems');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Si ya tenemos token y usuario en caché, no bloqueamos la interfaz con pantalla de carga
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !localStorage.getItem('token');
+  });
 
   // Carga del menú dinámico según el Rol del usuario (Req. 2)
   const fetchMenu = async () => {
@@ -33,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.get('/auth/menu');
       if (res.data.success) {
         setMenuItems(res.data.menu);
+        localStorage.setItem('menuItems', JSON.stringify(res.data.menu));
       }
     } catch (err) {
       console.error('Error al cargar menú dinámico:', err);
@@ -43,17 +52,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       if (token) {
         try {
-          const res = await api.get('/auth/me');
-          if (res.data.success) {
-            setUser(res.data.user);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-            await fetchMenu();
+          // Consultar sesión y menú en paralelo para máxima velocidad
+          const [resMe, resMenu] = await Promise.all([
+            api.get('/auth/me'),
+            api.get('/auth/menu')
+          ]);
+
+          if (resMe.data.success) {
+            setUser(resMe.data.user);
+            localStorage.setItem('user', JSON.stringify(resMe.data.user));
+          }
+          if (resMenu.data.success) {
+            setMenuItems(resMenu.data.menu);
+            localStorage.setItem('menuItems', JSON.stringify(resMenu.data.menu));
           }
         } catch {
           setUser(null);
           setToken(null);
+          setMenuItems([]);
           localStorage.removeItem('user');
           localStorage.removeItem('token');
+          localStorage.removeItem('menuItems');
         }
       }
       setLoading(false);
@@ -97,7 +116,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setMenuItems([]);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('menuItems');
     }
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
   return (
@@ -110,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         logout,
         refreshMenu: fetchMenu,
+        updateUser,
       }}
     >
       {children}

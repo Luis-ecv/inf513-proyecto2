@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::get('/menu', [AuthController::class, 'menu']);
+        Route::post('/perfil', [AuthController::class, 'actualizarPerfil']);
     });
 
     // Gestión de Usuarios y Roles (CU1)

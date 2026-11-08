@@ -3,11 +3,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme, type FontSize } from '../../context/ThemeContext';
 import { 
   Search, Sun, Moon, Sparkles, Type, Eye, LogOut, 
-  BookOpen, Layers, Archive, FileText, X
+  BookOpen, Layers, Archive, FileText, X, User as UserIcon
 } from 'lucide-react';
 import api from '../../services/api';
 import type { SearchResults } from '../../types';
 import { useNavigate } from 'react-router-dom';
+import { EditProfileModal } from '../profile/EditProfileModal';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuth();
@@ -27,6 +28,7 @@ export const Header: React.FC = () => {
 
   // Selector de accesibilidad desplegable
   const [showAccessMenu, setShowAccessMenu] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     if (searchQuery.trim().length < 2) {
@@ -308,20 +310,41 @@ export const Header: React.FC = () => {
 
         {/* 3. Perfil de Usuario y Logout */}
         {user && (
-          <div className="flex items-center gap-2 pl-2 border-l" style={{ borderColor: 'var(--border-color)' }}>
-            <div className="text-right hidden sm:block">
-              <div className="text-xs font-semibold leading-tight">{user.nombreCompleto}</div>
-              <div className="text-[10px] opacity-60 leading-tight capitalize">{user.rol}</div>
+          <>
+            <div className="flex items-center gap-2 pl-2 border-l" style={{ borderColor: 'var(--border-color)' }}>
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="flex items-center gap-2 p-1.5 rounded-lg border hover:opacity-80 transition text-left"
+                style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+                title="Editar mi perfil"
+              >
+                <div className="w-7 h-7 rounded-full border flex items-center justify-center overflow-hidden shrink-0" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}>
+                  {user.fotoRuta && !user.fotoRuta.includes('default.png') ? (
+                    <img src={`/storage/${user.fotoRuta}`} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="w-4 h-4 opacity-60" />
+                  )}
+                </div>
+                <div className="hidden sm:block pr-1">
+                  <div className="text-xs font-semibold leading-tight">{user.nombreCompleto}</div>
+                  <div className="text-[10px] opacity-60 leading-tight capitalize">{user.rol}</div>
+                </div>
+              </button>
+              <button
+                onClick={logout}
+                title="Cerrar Sesión"
+                className="p-2 rounded-lg border text-rose-500 hover:bg-rose-500/10 transition"
+                style={{ borderColor: 'var(--border-color)' }}
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
-            <button
-              onClick={logout}
-              title="Cerrar Sesión"
-              className="p-2 rounded-lg border text-rose-500 hover:bg-rose-500/10 transition"
-              style={{ borderColor: 'var(--border-color)' }}
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+
+            <EditProfileModal 
+              isOpen={showProfileModal} 
+              onClose={() => setShowProfileModal(false)} 
+            />
+          </>
         )}
       </div>
     </header>
