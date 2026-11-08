@@ -14,14 +14,12 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $table = 'usuario';
-    public $timestamps = false;
 
     protected $fillable = [
         'nombre_completo',
         'email',
         'username',
         'password',
-        'password_hash',
         'foto_ruta',
         'activo',
         'fecha_registro',
@@ -30,38 +28,16 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
-        'password_hash',
         'remember_token',
     ];
 
     protected function casts(): array
     {
         return [
+            'password' => 'hashed',
             'activo' => 'boolean',
             'fecha_registro' => 'datetime',
         ];
-    }
-
-    public function getAuthPasswordName(): string
-    {
-        return 'password_hash';
-    }
-
-    public function getAuthPassword(): ?string
-    {
-        return $this->password_hash ?? $this->attributes['password'] ?? null;
-    }
-
-    public function getPasswordAttribute(): ?string
-    {
-        return $this->attributes['password_hash'] ?? $this->attributes['password'] ?? null;
-    }
-
-    public function setPasswordAttribute(?string $value): void
-    {
-        if ($value) {
-            $this->attributes['password_hash'] = hash('sha256', $value);
-        }
     }
 
     public function rol()

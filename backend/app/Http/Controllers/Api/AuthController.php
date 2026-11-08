@@ -33,11 +33,11 @@ class AuthController extends Controller
             ->orWhere('username', $loginInput)
             ->first();
 
-        $storedHash = $user?->password_hash ?? $user?->password;
+        $storedHash = $user?->password;
         $passwordValid = false;
 
         if ($storedHash) {
-            if (hash('sha256', $password) === $storedHash || Hash::check($password, $storedHash)) {
+            if (Hash::check($password, $storedHash) || hash('sha256', $password) === $storedHash) {
                 $passwordValid = true;
             }
         }
@@ -222,7 +222,7 @@ class AuthController extends Controller
         }
 
         if ($request->filled('password')) {
-            $user->password_hash = hash('sha256', $request->input('password'));
+            $user->password = Hash::make($request->input('password'));
         }
 
         if ($request->hasFile('foto')) {

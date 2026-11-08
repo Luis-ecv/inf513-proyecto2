@@ -1,0 +1,82 @@
+# ==========================================
+# Archivos de Entorno y Secretos (Seguridad)
+# ==========================================
+.env
+.env.*
+*.env
+backend/.env
+backend/.env.*
+auth.json
+
+# ==========================================
+# Configuraciones Locales de Agentes / IA
+# ==========================================
+.agents/
+AGENTS.md
+
+# ==========================================
+# Dependencias de Paquetes
+# ==========================================
+node_modules/
+*/node_modules/
+vendor/
+backend/vendor/
+
+# ==========================================
+# Compilaciones y Artefactos de Producción
+# ==========================================
+dist/
+dist-ssr/
+frontend/dist/
+frontend/dist-ssr/
+backend/public/build/
+backend/public/hot/
+
+# ==========================================
+# Almacenamiento Dinámico y Archivos Subidos
+# ==========================================
+backend/public/storage
+backend/storage/app/public/fotos/*
+!backend/storage/app/public/fotos/.gitignore
+backend/storage/app/public/evidencias/*
+!backend/storage/app/public/evidencias/.gitignore
+backend/storage/framework/cache/*
+!backend/storage/framework/cache/.gitignore
+backend/storage/framework/sessions/*
+!backend/storage/framework/sessions/.gitignore
+backend/storage/framework/views/*
+!backend/storage/framework/views/.gitignore
+backend/storage/framework/testing/*
+!backend/storage/framework/testing/.gitignore
+backend/storage/logs/*.log
+backend/storage/*.key
+
+# ==========================================
+# Cachés, Logs y Resultados de Pruebas
+# ==========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.phpunit.cache/
+.phpunit.result.cache
+backend/.phpunit.cache/
+backend/.phpunit.result.cache
+
+# ==========================================
+# IDEs, Editores y Sistema Operativo
+# ==========================================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
