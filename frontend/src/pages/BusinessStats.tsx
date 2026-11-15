@@ -74,9 +74,6 @@ export const BusinessStats: React.FC = () => {
             <BarChart3 className="w-7 h-7 text-primary" />
             <h1 className="text-2xl font-bold">Estadísticas del Negocio Curricular</h1>
           </div>
-          <p className="text-xs opacity-60 mt-1">
-            Caso de Uso 8 (CU8) y Requisito 8: Cumplimiento por componentes temáticos y productividad del comité de rediseño.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">

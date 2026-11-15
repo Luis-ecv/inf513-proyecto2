@@ -29,6 +29,11 @@ export const Header: React.FC = () => {
   // Selector de accesibilidad desplegable
   const [showAccessMenu, setShowAccessMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user?.fotoRuta]);
 
   useEffect(() => {
     if (searchQuery.trim().length < 2) {
@@ -319,8 +324,13 @@ export const Header: React.FC = () => {
                 title="Editar mi perfil"
               >
                 <div className="w-7 h-7 rounded-full border flex items-center justify-center overflow-hidden shrink-0" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}>
-                  {user.fotoRuta && !user.fotoRuta.includes('default.png') ? (
-                    <img src={`/storage/${user.fotoRuta}`} alt="Avatar" className="w-full h-full object-cover" />
+                  {user.fotoRuta && !user.fotoRuta.includes('default.png') && !avatarError ? (
+                    <img 
+                      src={`/storage/${user.fotoRuta}`} 
+                      alt="Avatar" 
+                      className="w-full h-full object-cover" 
+                      onError={() => setAvatarError(true)}
+                    />
                   ) : (
                     <UserIcon className="w-4 h-4 opacity-60" />
                   )}

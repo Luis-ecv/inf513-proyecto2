@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { 
@@ -22,6 +23,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
+  const [modalAvatarError, setModalAvatarError] = useState(false);
 
   if (!isOpen || !user) return null;
 
@@ -87,7 +89,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
   const getFotoUrl = () => {
     if (fotoPreview) return fotoPreview;
-    if (user.fotoRuta && !user.fotoRuta.includes('default.png')) {
+    if (user.fotoRuta && !user.fotoRuta.includes('default.png') && !modalAvatarError) {
       return `/storage/${user.fotoRuta}`;
     }
     return null;
@@ -95,70 +97,85 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
   const currentFoto = getFotoUrl();
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-sm">
       <div
-        className="w-full max-w-lg rounded-2xl border shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
+        className="flex min-h-full items-center justify-center p-4 sm:p-6"
       >
-        {/* Cabecera */}
-        <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
-          <div className="flex items-center gap-2">
-            <UserIcon className="w-5 h-5 text-amber-500" />
-            <h3 className="font-bold text-base">Editar Mi Perfil</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 opacity-70 hover:opacity-100 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Mensajes */}
-        {formError && (
-          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{formError}</span>
-          </div>
-        )}
-
-        {formSuccess && (
-          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{formSuccess}</span>
-          </div>
-        )}
-
-        {/* Tarjeta de información de la cuenta (Solo lectura) */}
-        <div className="p-3 rounded-xl border flex items-center gap-3 text-xs" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}>
-          <div className="w-12 h-12 rounded-full border flex items-center justify-center overflow-hidden shrink-0" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}>
-            {currentFoto ? (
-              <img src={currentFoto} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <UserIcon className="w-6 h-6 opacity-40" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
+        <div
+          className="flex w-full max-w-xl max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-2xl border shadow-2xl sm:max-h-[calc(100vh-3rem)]"
+          style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
+        >
+          {/* Cabecera */}
+          <div className="flex shrink-0 items-center justify-between border-b px-5 py-4 sm:px-6" style={{ borderColor: 'var(--border-color)' }}>
             <div className="flex items-center gap-2">
-              <span className="font-mono font-semibold">@{user.username}</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-amber-500/40 text-amber-500 flex items-center gap-1">
-                <Shield className="w-2.5 h-2.5" />
-                {user.rol}
-              </span>
+              <div className="rounded-lg bg-amber-500/10 p-2">
+                <UserIcon className="h-5 w-5 text-amber-500" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base">Editar Mi Perfil</h3>
+                <p className="text-[11px] opacity-60">Actualiza tu información personal</p>
+              </div>
             </div>
-            <div className="text-[11px] opacity-70 flex items-center gap-1 mt-0.5 truncate">
-              <Mail className="w-3 h-3 opacity-50 shrink-0" />
-              <span className="truncate">{user.email}</span>
-            </div>
-            <div className="text-[10px] opacity-50 mt-0.5">
-              * El correo y el rol solo pueden ser modificados por la Dirección de Carrera.
-            </div>
+            <button
+              onClick={onClose}
+              className="rounded-lg p-2 opacity-60 transition hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
+              aria-label="Cerrar edición de perfil"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-        </div>
 
-        {/* Formulario */}
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <div className="overflow-y-auto px-5 py-4 sm:px-6">
+            {/* Mensajes */}
+            {formError && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-500">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            {formSuccess && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-500">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>{formSuccess}</span>
+              </div>
+            )}
+
+            {/* Tarjeta de información de la cuenta (Solo lectura) */}
+            <div className="flex items-center gap-3 rounded-xl border p-3 text-xs" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}>
+                {currentFoto ? (
+                  <img 
+                    src={currentFoto} 
+                    alt="Avatar" 
+                    className="h-full w-full object-cover" 
+                    onError={() => setModalAvatarError(true)}
+                  />
+                ) : (
+                  <UserIcon className="h-6 w-6 opacity-40" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono font-semibold">@{user.username}</span>
+                  <span className="flex items-center gap-1 rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] font-bold text-amber-500">
+                    <Shield className="h-2.5 w-2.5" />
+                    {user.rol}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex items-center gap-1 truncate text-[11px] opacity-70">
+                  <Mail className="h-3 w-3 shrink-0 opacity-50" />
+                  <span className="truncate">{user.email}</span>
+                </div>
+                <div className="mt-0.5 text-[10px] opacity-50">
+                  * El correo y el rol solo pueden ser modificados por la Dirección de Carrera.
+                </div>
+              </div>
+            </div>
+
+            {/* Formulario */}
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-xs">
           {/* Nombre Completo */}
           <div>
             <label className="block font-semibold mb-1">Nombre Completo</label>
@@ -234,29 +251,31 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
             )}
           </div>
 
-          {/* Botones de acción */}
-          <div className="flex justify-end gap-2 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="py-2 px-4 rounded-lg border font-semibold hover:opacity-80 transition"
-              style={{ borderColor: 'var(--border-color)' }}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={saving || (password.length > 0 && !isPasswordValid)}
-              className="py-2 px-5 rounded-lg font-semibold shadow-md transition disabled:opacity-50"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
-            >
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
+              {/* Botones de acción */}
+              <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end" style={{ borderColor: 'var(--border-color)' }}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={saving}
+                  className="rounded-lg border px-4 py-2 font-semibold transition hover:opacity-80"
+                  style={{ borderColor: 'var(--border-color)' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || (password.length > 0 && !isPasswordValid)}
+                  className="rounded-lg px-5 py-2 font-semibold shadow-md transition disabled:opacity-50"
+                  style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+                >
+                  {saving ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
-

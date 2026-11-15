@@ -8,6 +8,8 @@ import { Dashboard } from './pages/Dashboard';
 import { CurriculumGrid } from './pages/CurriculumGrid';
 import { PrerequisiteGraph } from './pages/PrerequisiteGraph';
 import { RedesignOverview } from './pages/RedesignOverview';
+import { ChaptersOverview } from './pages/ChaptersOverview';
+import { ObservationsOverview } from './pages/ObservationsOverview';
 import { ChapterDetail } from './pages/ChapterDetail';
 import { EvidenceRepository } from './pages/EvidenceRepository';
 import { FinalReportCompiler } from './pages/FinalReportCompiler';
@@ -52,9 +54,9 @@ export const AppContent: React.FC = () => {
         <Route path="malla" element={<CurriculumGrid />} />
         <Route path="grafo" element={<PrerequisiteGraph />} />
         <Route path="redisenio" element={<RedesignOverview />} />
-        <Route path="capitulos" element={<RedesignOverview />} />
+        <Route path="capitulos" element={<ChaptersOverview />} />
         <Route path="capitulos/:id" element={<ChapterDetail />} />
-        <Route path="observaciones" element={<RedesignOverview />} />
+        <Route path="observaciones" element={<ObservationsOverview />} />
         <Route path="evidencias" element={<EvidenceRepository />} />
         <Route path="reporte-final" element={<FinalReportCompiler />} />
         <Route path="estadisticas" element={<BusinessStats />} />

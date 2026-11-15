@@ -6,8 +6,11 @@ import {
   X, Search 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getActivePlanId, setActivePlanId } from '../services/activePlan';
 
 export const CurriculumGrid: React.FC = () => {
+  const [planes, setPlanes] = useState<PlanEstudio[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<number>(getActivePlanId);
   const [plan, setPlan] = useState<PlanEstudio | null>(null);
   const [asignaturas, setAsignaturas] = useState<Asignatura[]>([]);
   const [totalCreditos, setTotalCreditos] = useState<number>(0);
@@ -25,10 +28,33 @@ export const CurriculumGrid: React.FC = () => {
   const [formArea, setFormArea] = useState('Programación');
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [planError, setPlanError] = useState('');
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [planCodigo, setPlanCodigo] = useState('');
+  const [planCarrera, setPlanCarrera] = useState('');
+  const [planAnio, setPlanAnio] = useState(new Date().getFullYear());
+  const [planDescripcion, setPlanDescripcion] = useState('');
+  const [planObjetivos, setPlanObjetivos] = useState('');
+  const [planPerfil, setPlanPerfil] = useState('');
+  const [planCreditosMin, setPlanCreditosMin] = useState(200);
+  const [planCreditosMax, setPlanCreditosMax] = useState(280);
 
-  const fetchAsignaturas = async () => {
+  const fetchPlanes = async () => {
+    const res = await api.get('/planes');
+    if (res.data.success) {
+      const planesDisponibles: PlanEstudio[] = res.data.planes;
+      setPlanes(planesDisponibles);
+      if (planesDisponibles.length > 0 && !planesDisponibles.some((item) => item.id === selectedPlanId)) {
+        setSelectedPlanId(planesDisponibles[0].id);
+        setActivePlanId(planesDisponibles[0].id);
+      }
+    }
+  };
+
+  const fetchAsignaturas = async (idPlan = selectedPlanId) => {
     try {
-      const res = await api.get('/planes/1/asignaturas');
+      const res = await api.get(`/planes/${idPlan}/asignaturas`);
       if (res.data.success) {
         setPlan(res.data.plan);
         setAsignaturas(res.data.asignaturas);
@@ -42,8 +68,56 @@ export const CurriculumGrid: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchAsignaturas();
+    fetchPlanes().catch((err) => console.error('Error al cargar planes de estudio:', err));
   }, []);
+
+  useEffect(() => {
+    if (selectedPlanId) {
+      setLoading(true);
+      fetchAsignaturas(selectedPlanId);
+    }
+  }, [selectedPlanId]);
+
+  const handleCrearPlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPlanError('');
+
+    if (!planCodigo.trim() || !planCarrera.trim() || !planObjetivos.trim() || !planPerfil.trim()) {
+      setPlanError('Código, carrera, objetivos y perfil de egreso son obligatorios.');
+      return;
+    }
+
+    setSavingPlan(true);
+    try {
+      const res = await api.post('/planes', {
+        codigo: planCodigo.trim().toUpperCase(),
+        carrera: planCarrera.trim(),
+        anio_vigencia: planAnio,
+        descripcion: planDescripcion.trim(),
+        objetivos: planObjetivos.trim(),
+        perfil_egreso: planPerfil.trim(),
+        limite_creditos_min: planCreditosMin,
+        limite_creditos_max: planCreditosMax,
+      });
+
+      if (res.data.success) {
+        const nuevoPlan: PlanEstudio = res.data.plan;
+        setShowPlanModal(false);
+        setSelectedPlanId(nuevoPlan.id);
+        setActivePlanId(nuevoPlan.id);
+        setPlanCodigo('');
+        setPlanCarrera('');
+        setPlanDescripcion('');
+        setPlanObjetivos('');
+        setPlanPerfil('');
+        await fetchPlanes();
+      }
+    } catch (err: any) {
+      setPlanError(err.response?.data?.message || 'Error al registrar el plan de estudio.');
+    } finally {
+      setSavingPlan(false);
+    }
+  };
 
   const handleCrearAsignatura = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +193,35 @@ export const CurriculumGrid: React.FC = () => {
 
         {/* Métricas de Créditos y Acciones */}
         <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs opacity-60 font-semibold">Plan:</span>
+            <select
+              value={selectedPlanId}
+              onChange={(e) => {
+                const idPlan = Number(e.target.value);
+                setSelectedPlanId(idPlan);
+                setActivePlanId(idPlan);
+              }}
+              className="max-w-[220px] px-3 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+            >
+              {planes.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.codigo} - {item.carrera}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={() => setShowPlanModal(true)}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold hover:opacity-80 transition"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+          >
+            <Plus className="w-4 h-4 text-emerald-500" />
+            <span>Nuevo Plan de Estudio</span>
+          </button>
+
           <div className="px-3 py-2 rounded-xl border text-center" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
             <div className="text-xs opacity-60">Créditos Acumulados</div>
             <div className="text-lg font-bold text-blue-500">{totalCreditos} / {plan?.limite_creditos_max}</div>
@@ -232,6 +335,81 @@ export const CurriculumGrid: React.FC = () => {
       </div>
 
       {/* Modal de Registro de Nueva Asignatura (RF-02) */}
+      {showPlanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl border shadow-2xl relative"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}>
+            <button onClick={() => setShowPlanModal(false)} className="absolute top-4 right-4 p-1.5 rounded-lg border hover:opacity-80 transition" style={{ borderColor: 'var(--border-color)' }}>
+              <X className="w-4 h-4" />
+            </button>
+
+            <h2 className="text-base font-bold flex items-center gap-2 mb-1">
+              <BookOpen className="w-4 h-4 text-emerald-500" /> Registrar nuevo plan de estudio
+            </h2>
+            <p className="text-xs opacity-60 mb-4">El plan se creará en estado “En Elaboración” y podrá completarse con sus asignaturas.</p>
+
+            {planError && (
+              <div className="mb-4 p-3 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{planError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCrearPlan} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold mb-1">Código:</label>
+                  <input value={planCodigo} onChange={(e) => setPlanCodigo(e.target.value)} placeholder="ej: PLAN-2027" className="w-full px-3 py-2 border rounded-lg focus:outline-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Año de vigencia:</label>
+                  <input type="number" min="1990" value={planAnio} onChange={(e) => setPlanAnio(Number(e.target.value))} className="w-full px-3 py-2 border rounded-lg focus:outline-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Carrera:</label>
+                <input value={planCarrera} onChange={(e) => setPlanCarrera(e.target.value)} placeholder="Nombre de la carrera" className="w-full px-3 py-2 border rounded-lg focus:outline-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Descripción:</label>
+                <textarea value={planDescripcion} onChange={(e) => setPlanDescripcion(e.target.value)} rows={2} className="w-full px-3 py-2 border rounded-lg focus:outline-none resize-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Objetivos:</label>
+                <textarea value={planObjetivos} onChange={(e) => setPlanObjetivos(e.target.value)} rows={3} className="w-full px-3 py-2 border rounded-lg focus:outline-none resize-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Perfil de egreso:</label>
+                <textarea value={planPerfil} onChange={(e) => setPlanPerfil(e.target.value)} rows={3} className="w-full px-3 py-2 border rounded-lg focus:outline-none resize-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold mb-1">Créditos mínimos:</label>
+                  <input type="number" min="150" value={planCreditosMin} onChange={(e) => setPlanCreditosMin(Number(e.target.value))} className="w-full px-3 py-2 border rounded-lg focus:outline-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Créditos máximos:</label>
+                  <input type="number" min={planCreditosMin} value={planCreditosMax} onChange={(e) => setPlanCreditosMax(Number(e.target.value))} className="w-full px-3 py-2 border rounded-lg focus:outline-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border-color)' }}>
+                <button type="button" onClick={() => setShowPlanModal(false)} className="px-4 py-2 border rounded-lg hover:opacity-80 transition" style={{ borderColor: 'var(--border-color)' }}>Cancelar</button>
+                <button type="submit" disabled={savingPlan} className="px-4 py-2 rounded-lg font-bold shadow-sm transition disabled:opacity-50" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}>
+                  {savingPlan ? 'Guardando...' : 'Guardar Plan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Registro de Nueva Asignatura (RF-02) */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
           <div 
@@ -247,7 +425,7 @@ export const CurriculumGrid: React.FC = () => {
             </button>
 
             <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <BookOpen className="w-4 h-4 text-blue-500" /> Registrar Nueva Asignatura (RF-02)
+              <BookOpen className="w-4 h-4 text-blue-500" /> Registrar Nueva Asignatura
             </h2>
             <p className="text-xs opacity-60 mb-4">
               La materia será vinculada al plan curricular activo con cálculo automático de carga horaria.

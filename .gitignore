@@ -11,8 +11,8 @@ auth.json
 # ==========================================
 # Configuraciones Locales de Agentes / IA
 # ==========================================
-.agents/
 AGENTS.md
+!.agents/AGENTS.md
 
 # ==========================================
 # Dependencias de Paquetes
@@ -79,4 +79,3 @@ backend/.phpunit.result.cache
 .DS_Store
 Thumbs.db
 desktop.ini
-

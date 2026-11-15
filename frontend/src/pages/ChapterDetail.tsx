@@ -280,9 +280,9 @@ export const ChapterDetail: React.FC = () => {
       >
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--primary)' }}>
-            <ShieldCheck className="w-4 h-4" /> Transición Formal de la Máquina de Estados (RF-06, RF-07)
+            <ShieldCheck className="w-4 h-4" /> Transición Formal de la Máquina de Estados
           </h2>
-          <span className="text-[11px] opacity-60">Pista inmutable obligatoria (RF-10)</span>
+          <span className="text-[11px] opacity-60">Pista inmutable obligatoria</span>
         </div>
 
         {transError && (
@@ -586,7 +586,7 @@ export const ChapterDetail: React.FC = () => {
           <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: 'var(--border-color)' }}>
             <div>
               <h2 className="text-sm font-bold flex items-center gap-2">
-                <Archive className="w-4 h-4 text-emerald-500" /> Documentos de Respaldo Vinculados (RF-07, RF-13)
+                <Archive className="w-4 h-4 text-emerald-500" /> Documentos de Respaldo Vinculados
               </h2>
               <p className="text-xs opacity-60 mt-0.5">
                 Al menos un documento normativo es obligatorio para la aprobación formal del capítulo.
@@ -644,7 +644,7 @@ export const ChapterDetail: React.FC = () => {
           style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
         >
           <h2 className="text-sm font-bold flex items-center gap-2">
-            <History className="w-4 h-4 text-amber-500" /> Pista Histórica Inmutable de Modificaciones (RF-10)
+            <History className="w-4 h-4 text-amber-500" /> Pista Histórica Inmutable de Modificaciones
           </h2>
           <p className="text-xs opacity-60">
             Registro cronológico protegido de todas las transiciones de estado, justificaciones técnicas y usuarios responsables.
@@ -688,7 +688,7 @@ export const ChapterDetail: React.FC = () => {
             </button>
 
             <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <Paperclip className="w-4 h-4 text-blue-500" /> Vincular Evidencia Normativa (RF-13)
+              <Paperclip className="w-4 h-4 text-blue-500" /> Vincular Evidencia Normativa
             </h2>
             <p className="text-xs opacity-60 mb-4">
               Selecciona un documento o resolución del repositorio digital.

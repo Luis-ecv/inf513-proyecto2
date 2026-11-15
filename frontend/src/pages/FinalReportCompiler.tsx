@@ -61,9 +61,6 @@ export const FinalReportCompiler: React.FC = () => {
             <Printer className="w-6 h-6 text-primary" />
             <h1 className="text-xl font-bold">Compilador del Reporte Curricular Oficial</h1>
           </div>
-          <p className="text-xs opacity-60 mt-0.5">
-            Caso de Uso 7 (CU7, RF-15): Consolidación del documento curricular completo con capítulos aprobados y anexos legales.
-          </p>
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">

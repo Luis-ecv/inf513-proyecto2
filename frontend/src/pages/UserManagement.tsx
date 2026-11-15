@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../services/api';
 import type { UsuarioBackend, Rol } from '../types';
 import { 
@@ -10,6 +11,7 @@ export const UserManagement: React.FC = () => {
   const [usuarios, setUsuarios] = useState<UsuarioBackend[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
 
   // Modal para nuevo usuario
   const [showModal, setShowModal] = useState(false);
@@ -146,9 +148,6 @@ export const UserManagement: React.FC = () => {
             <Users className="w-7 h-7 text-primary" />
             <h1 className="text-2xl font-bold">Gestión de Usuarios y Roles</h1>
           </div>
-          <p className="text-xs opacity-60 mt-1">
-            Caso de Uso 1 (CU1): Administración de cuentas académicas, asignación de roles y control de acceso.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -178,7 +177,8 @@ export const UserManagement: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {usuarios.map((u) => {
-            const fotoUrl = u.foto_ruta ? `/storage/${u.foto_ruta}` : null;
+            const hasFoto = u.foto_ruta && !u.foto_ruta.includes('default.png') && !imageErrors[u.id];
+            const fotoUrl = hasFoto ? `/storage/${u.foto_ruta}` : null;
             return (
               <div
                 key={u.id}
@@ -192,9 +192,8 @@ export const UserManagement: React.FC = () => {
                       src={fotoUrl}
                       alt={u.nombre_completo}
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Fallback a ícono si la imagen no carga
-                        (e.target as HTMLElement).style.display = 'none';
+                      onError={() => {
+                        setImageErrors((prev) => ({ ...prev, [u.id]: true }));
                       }}
                     />
                   ) : (
@@ -236,8 +235,8 @@ export const UserManagement: React.FC = () => {
       )}
 
       {/* Modal para Crear Usuario */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+      {showModal && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div
             className="w-full max-w-lg rounded-2xl border shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
@@ -289,6 +288,18 @@ export const UserManagement: React.FC = () => {
                     className="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-primary file:text-white hover:file:opacity-80 cursor-pointer"
                   />
                   <span className="text-[10px] opacity-50 block">Formatos: JPG, PNG, WebP (máx. 2MB).</span>
+                  {fotoPreview && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFotoFile(null);
+                        setFotoPreview(null);
+                      }}
+                      className="text-[10px] text-rose-500 hover:underline block pt-0.5"
+                    >
+                      Quitar fotografía seleccionada
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -409,7 +420,8 @@ export const UserManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

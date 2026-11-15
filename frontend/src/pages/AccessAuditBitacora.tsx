@@ -4,7 +4,7 @@ import type { BitacoraEntry, RecursoMasAccedido, EstadisticasLogins } from '../t
 import { 
   ShieldCheck, CheckCircle2, XCircle, Activity, 
   RotateCcw, Globe, Calendar, Filter,
-  ArrowRight, ShieldAlert, Cpu
+  ArrowRight, ShieldAlert,
 } from 'lucide-react';
 
 export const AccessAuditBitacora: React.FC = () => {
@@ -14,6 +14,7 @@ export const AccessAuditBitacora: React.FC = () => {
   
   const [loading, setLoading] = useState(true);
   const [tipoEvento, setTipoEvento] = useState<string>('');
+  const [mostrarRecursos, setMostrarRecursos] = useState(false);
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalRegistros, setTotalRegistros] = useState<number>(0);
@@ -47,6 +48,7 @@ export const AccessAuditBitacora: React.FC = () => {
 
   const handleFiltroCambio = (nuevoFiltro: string) => {
     setTipoEvento(nuevoFiltro);
+    setMostrarRecursos(false);
     setPage(1);
   };
 
@@ -91,9 +93,6 @@ export const AccessAuditBitacora: React.FC = () => {
             <ShieldCheck className="w-7 h-7 text-emerald-500" />
             <h1 className="text-2xl font-bold">Bitácora de Accesos y Seguridad</h1>
           </div>
-          <p className="text-xs opacity-60 mt-1">
-            Requisito 4 y 8: Registro transaccional inmutable de inicios de sesión y auditoría de endpoints consumidos.
-          </p>
         </div>
         <button
           onClick={cargarBitacora}
@@ -167,48 +166,8 @@ export const AccessAuditBitacora: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid: Recursos más visitados (Top 10) & Filtro de Bitácora */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Top 10 Recursos Más Accedidos (Req. 4, Req. 8) */}
-        <div className="p-5 rounded-2xl border space-y-4"
-          style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
-          <div className="flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-indigo-500" />
-            <h2 className="text-sm font-bold">Top 10 Recursos Más Accedidos</h2>
-          </div>
-          <p className="text-[11px] opacity-60">
-            Monitoreo de carga y frecuencia de endpoints consumidos por usuarios y servicios.
-          </p>
-
-          <div className="space-y-3 pt-2">
-            {recursosMasAccedidos.length === 0 ? (
-              <div className="text-xs opacity-50 text-center py-4">No hay accesos registrados aún.</div>
-            ) : (
-              recursosMasAccedidos.map((rec, index) => {
-                const pct = Math.round((rec.total_accesos / maxAcceso) * 100);
-                return (
-                  <div key={index} className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-mono font-medium truncate max-w-[200px]" title={rec.ruta_recurso}>
-                        {rec.ruta_recurso}
-                      </span>
-                      <span className="font-semibold text-indigo-500">{rec.total_accesos} reqs</span>
-                    </div>
-                    <div className="w-full bg-black/5 dark:bg-white/5 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className="bg-indigo-500 h-1.5 rounded-full"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Tabla Principal de Eventos de Bitácora */}
-        <div className="lg:col-span-2 p-5 rounded-2xl border space-y-4"
+      {/* Registro principal de auditoría */}
+      <div className="p-5 rounded-2xl border space-y-4"
           style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex items-center gap-2">
@@ -254,11 +213,20 @@ export const AccessAuditBitacora: React.FC = () => {
               >
                 Endpoints
               </button>
+              <button
+                onClick={() => setMostrarRecursos(true)}
+                className={`px-2.5 py-1 rounded-lg border transition-all ${
+                  mostrarRecursos ? 'bg-indigo-600 text-white font-bold' : 'opacity-70 hover:opacity-100'
+                }`}
+                style={{ borderColor: 'var(--border-color)' }}
+              >
+                Recursos más consultados
+              </button>
             </div>
           </div>
 
           {/* Tabla de Eventos */}
-          <div className="overflow-x-auto">
+          {!mostrarRecursos && <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b opacity-60" style={{ borderColor: 'var(--border-color)' }}>
@@ -330,7 +298,38 @@ export const AccessAuditBitacora: React.FC = () => {
                 )}
               </tbody>
             </table>
-          </div>
+          </div>}
+
+          {mostrarRecursos && (
+            <div className="pt-2">
+              <p className="text-[11px] opacity-60 mb-3">
+                Rutas que registran más accesos en el sistema.
+              </p>
+              {recursosMasAccedidos.length === 0 ? (
+                <p className="text-xs opacity-50 text-center py-4">Todavía no hay accesos registrados.</p>
+              ) : (
+                <ul className="space-y-2 text-xs">
+                  {recursosMasAccedidos.map((rec, index) => {
+                    const pct = Math.round((rec.total_accesos / maxAcceso) * 100);
+                    return (
+                      <li key={index} className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className="text-[11px] opacity-50">{index + 1}.</span>
+                            <span className="font-mono truncate" title={rec.ruta_recurso}>{rec.ruta_recurso}</span>
+                          </span>
+                          <span className="whitespace-nowrap font-semibold opacity-70">{rec.total_accesos} accesos</span>
+                        </div>
+                        <div className="w-full bg-black/5 dark:bg-white/5 rounded-full h-1 overflow-hidden">
+                          <div className="bg-indigo-500 h-1 rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* Paginación */}
           {totalPages > 1 && (
@@ -359,7 +358,6 @@ export const AccessAuditBitacora: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 };

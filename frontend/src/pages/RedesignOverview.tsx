@@ -6,6 +6,7 @@ import {
   Clock, AlertTriangle, FileEdit, X, AlertCircle 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getActivePlanId } from '../services/activePlan';
 
 export const RedesignOverview: React.FC = () => {
   const [componentes, setComponentes] = useState<Componente[]>([]);
@@ -30,7 +31,7 @@ export const RedesignOverview: React.FC = () => {
 
   const fetchComponentes = async () => {
     try {
-      const res = await api.get('/planes/1/componentes');
+      const res = await api.get(`/planes/${getActivePlanId()}/componentes`);
       if (res.data.success) {
         setComponentes(res.data.componentes);
       }
@@ -91,7 +92,7 @@ export const RedesignOverview: React.FC = () => {
         numero: compNumero,
         nombre: compNombre.trim(),
         descripcion: compDesc.trim(),
-        id_plan_estudio: 1,
+        id_plan_estudio: getActivePlanId(),
       });
 
       if (res.data.success) {
@@ -158,7 +159,7 @@ export const RedesignOverview: React.FC = () => {
             </span>
           </div>
           <h1 className="text-xl font-extrabold tracking-tight mt-1">
-            Estructura de Componentes y Capítulos Correlativos (CU4, RF-05)
+            Estructura de Componentes y Capítulos Correlativos
           </h1>
           <p className="text-xs opacity-60 mt-0.5">
             Distribución de responsabilidades, seguimiento por máquina de estados y auditoría inmutable.
@@ -291,7 +292,7 @@ export const RedesignOverview: React.FC = () => {
             </button>
 
             <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <Layers className="w-4 h-4 text-purple-500" /> Registrar Capítulo Correlativo (RF-05)
+              <Layers className="w-4 h-4 text-purple-500" /> Registrar Capítulo Correlativo
             </h2>
             <p className="text-xs opacity-60 mb-4">
               El capítulo se iniciará en estado 'Borrador' para su posterior asignación y revisión.
@@ -398,7 +399,7 @@ export const RedesignOverview: React.FC = () => {
             </button>
 
             <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <Layers className="w-4 h-4 text-purple-500" /> Registrar Componente Temático (RF-05)
+              <Layers className="w-4 h-4 text-purple-500" /> Registrar Componente Temático
             </h2>
             <p className="text-xs opacity-60 mb-4">
               Sección estructural mayor del documento curricular.

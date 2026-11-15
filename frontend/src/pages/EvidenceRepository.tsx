@@ -134,7 +134,7 @@ export const EvidenceRepository: React.FC = () => {
             </span>
           </div>
           <h1 className="text-xl font-extrabold tracking-tight mt-1">
-            Repositorio Digital y Búsqueda Facetada (CU6, RF-11 a RF-14)
+            Repositorio Digital y Búsqueda Facetada
           </h1>
           <p className="text-xs opacity-60 mt-0.5">
             Resoluciones ICU, dictámenes, actas y jerarquías normativas que sustentan el rediseño.
@@ -333,7 +333,7 @@ export const EvidenceRepository: React.FC = () => {
             </button>
 
             <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <Archive className="w-4 h-4 text-emerald-500" /> Subir Evidencia Digital (RF-11, RF-12)
+              <Archive className="w-4 h-4 text-emerald-500" /> Subir Evidencia Digital
             </h2>
             <p className="text-xs opacity-60 mb-4">
               Carga un archivo PDF o imagen oficial para respaldo normativo de los capítulos.

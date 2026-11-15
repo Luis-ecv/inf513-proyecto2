@@ -28,7 +28,15 @@ class ChapterController extends Controller
     {
         $componentes = Componente::where('id_plan_estudio', $idPlan)
             ->with(['capitulos' => function ($q) {
-                $q->with(['estado', 'redactores:id,nombre_completo,email'])->orderBy('numero');
+                $q->with([
+                    'estado',
+                    'redactores:id,nombre_completo,email',
+                    'observaciones' => function ($observationQuery) {
+                        $observationQuery
+                            ->with('observador:id,nombre_completo')
+                            ->orderByDesc('created_at');
+                    },
+                ])->orderBy('numero');
             }])
             ->orderBy('numero')
             ->get();

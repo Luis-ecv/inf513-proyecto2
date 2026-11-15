@@ -12,6 +12,7 @@ import {
   ArrowLeft, X, Info 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getActivePlanId } from '../services/activePlan';
 
 export const PrerequisiteGraph: React.FC = () => {
   const nodeTypes = useMemo(() => ({ customSubjectNode: CustomSubjectNode }), []);
@@ -36,7 +37,7 @@ export const PrerequisiteGraph: React.FC = () => {
   // Cargar Grafo desde API
   const fetchGrafo = async () => {
     try {
-      const res = await api.get('/planes/1/grafo');
+      const res = await api.get(`/planes/${getActivePlanId()}/grafo`);
       if (res.data.success) {
         const grafoNodes: Node[] = res.data.grafo.nodes.map((n: any) => ({
           ...n,
@@ -59,7 +60,7 @@ export const PrerequisiteGraph: React.FC = () => {
   // Cargar catálogo de asignaturas para el modal
   const fetchAsignaturasList = async () => {
     try {
-      const res = await api.get('/planes/1/asignaturas');
+      const res = await api.get(`/planes/${getActivePlanId()}/asignaturas`);
       if (res.data.success) {
         setAsignaturasList(res.data.asignaturas);
       }
@@ -231,7 +232,7 @@ export const PrerequisiteGraph: React.FC = () => {
           <div>
             <h1 className="text-lg font-bold flex items-center gap-2">
               <GitFork className="w-5 h-5 text-purple-500" />
-              Grafo Acíclico Dirigido (DAG) de Prerrequisitos (CU3, RF-03, RF-04)
+              Grafo Acíclico Dirigido (DAG) de Prerrequisitos
             </h1>
             <p className="text-xs opacity-60">
               Haz clic en cualquier asignatura para resaltar su trazabilidad pedagógica.
@@ -357,7 +358,7 @@ export const PrerequisiteGraph: React.FC = () => {
             </button>
 
             <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <GitFork className="w-4 h-4 text-purple-500" /> Vincular Prelación (RF-03)
+              <GitFork className="w-4 h-4 text-purple-500" /> Vincular Prelación
             </h2>
             <p className="text-xs opacity-60 mb-4">
               El motor en el backend validará que la nueva arista no genere ciclos directos ni indirectos.
