@@ -16,7 +16,7 @@ export const MainLayout: React.FC = () => {
         <Header />
 
         {/* Contenido de la Ruta */}
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto report-print-main">
           <Outlet />
         </main>
 

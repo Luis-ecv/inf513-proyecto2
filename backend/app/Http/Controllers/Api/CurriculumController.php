@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePrerequisiteRequest;
 use App\Http\Requests\StoreSubjectRequest;
+use App\Http\Requests\UpdateSubjectRequest;
 use App\Models\Asignatura;
 use App\Models\PlanEstudio;
 use App\Services\PrerequisiteService;
@@ -96,6 +97,44 @@ class CurriculumController extends Controller
             'message' => 'Asignatura registrada exitosamente.',
             'asignatura' => $asignatura,
         ], 201);
+    }
+
+    /**
+     * Actualiza una asignatura existente (RF-02).
+     */
+    public function updateAsignatura(UpdateSubjectRequest $request, int $idAsignatura): JsonResponse
+    {
+        $asignatura = Asignatura::findOrFail($idAsignatura);
+        $asignatura->update($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Asignatura actualizada exitosamente.',
+            'asignatura' => $asignatura->fresh(),
+        ]);
+    }
+
+    /**
+     * Elimina una asignatura sin relaciones de prelación pendientes.
+     */
+    public function destroyAsignatura(int $idAsignatura): JsonResponse
+    {
+        $asignatura = Asignatura::findOrFail($idAsignatura);
+        $prerrequisitos = $asignatura->materiasDependientes()->count() + $asignatura->prerrequisitos()->count();
+
+        if ($prerrequisitos > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede eliminar la asignatura porque todavía tiene relaciones de prelación. Desvincúlelas primero desde el grafo.',
+            ], 409);
+        }
+
+        $asignatura->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Asignatura eliminada exitosamente.',
+        ]);
     }
 
     /**

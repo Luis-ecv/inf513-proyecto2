@@ -148,9 +148,9 @@ export interface BitacoraEntry {
   ip_address: string;
   user_agent: string;
   tipo_evento: string;
-  ruta_recurso: string;
+  recurso_accedido: string;
   metodo_http: string;
-  descripcion?: string;
+  detalle?: string | null;
   fecha_hora: string;
   id_usuario?: number | null;
   usuario?: {
@@ -162,15 +162,15 @@ export interface BitacoraEntry {
 }
 
 export interface RecursoMasAccedido {
-  ruta_recurso: string;
+  recurso_accedido: string;
+  metodo_http?: string;
   total_accesos: number;
 }
 
 export interface EstadisticasLogins {
-  exitosos: number;
-  fallidos: number;
-  total: number;
-  efectividad_pct: number;
+  totalExitosos: number;
+  totalFallidos: number;
+  tasaEfectividad: number;
 }
 
 export interface ComponenteStat {

@@ -9,7 +9,7 @@ import api from '../services/api';
 import { CustomSubjectNode } from '../components/graph/CustomSubjectNode';
 import { 
   GitFork, Plus, AlertCircle, CheckCircle2, RotateCcw, 
-  ArrowLeft, X, Info 
+  ArrowLeft, X, Info, Unlink, Trash2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getActivePlanId } from '../services/activePlan';
@@ -27,12 +27,14 @@ export const PrerequisiteGraph: React.FC = () => {
 
   // Modal para vincular nuevo prerrequisito (RF-03)
   const [showModal, setShowModal] = useState(false);
+  const [showDesvincularModal, setShowDesvincularModal] = useState(false);
   const [asignaturasList, setAsignaturasList] = useState<any[]>([]);
   const [targetAsigId, setTargetAsigId] = useState<number | ''>('');
   const [reqAsigId, setReqAsigId] = useState<number | ''>('');
   const [vincularError, setVincularError] = useState('');
   const [vincularSuccess, setVincularSuccess] = useState('');
   const [saving, setSaving] = useState(false);
+  const [unlinkingEdgeId, setUnlinkingEdgeId] = useState<string | null>(null);
 
   // Cargar Grafo desde API
   const fetchGrafo = async () => {
@@ -205,6 +207,32 @@ export const PrerequisiteGraph: React.FC = () => {
     []
   );
 
+  const handleDesvincular = async (edge: Edge) => {
+    setUnlinkingEdgeId(edge.id);
+    try {
+      const res = await api.delete('/prerrequisitos', {
+        data: {
+          id_asignatura: Number(edge.target),
+          id_asignatura_requisito: Number(edge.source),
+        },
+      });
+
+      if (res.data.success) {
+        await fetchGrafo();
+        setShowDesvincularModal(false);
+      }
+    } catch (err: any) {
+      window.alert(err.response?.data?.message || 'No se pudo desvincular la prelación.');
+    } finally {
+      setUnlinkingEdgeId(null);
+    }
+  };
+
+  const nombreMateria = (id: string) => {
+    const node = rawNodes.find((item) => item.id === id);
+    return node ? `${node.data.sigla} - ${node.data.nombre}` : `Asignatura #${id}`;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -268,6 +296,14 @@ export const PrerequisiteGraph: React.FC = () => {
             style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
           >
             <Plus className="w-4 h-4" /> Vincular Prelación
+          </button>
+          <button
+            onClick={() => setShowDesvincularModal(true)}
+            disabled={rawEdges.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold hover:opacity-80 transition disabled:opacity-40"
+            style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+          >
+            <Unlink className="w-4 h-4 text-rose-500" /> Desvincular Prelación
           </button>
         </div>
       </div>
@@ -340,6 +376,53 @@ export const PrerequisiteGraph: React.FC = () => {
             </div>
           </div>
         )}
+
+        {showDesvincularModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+            <div
+              className="w-full max-w-lg p-6 rounded-2xl border shadow-2xl relative"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
+            >
+              <button
+                onClick={() => setShowDesvincularModal(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-lg border hover:opacity-80 transition"
+                style={{ borderColor: 'var(--border-color)' }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <h2 className="text-base font-bold flex items-center gap-2 mb-1">
+                <Unlink className="w-4 h-4 text-rose-500" /> Desvincular Prelación
+              </h2>
+              <p className="text-xs opacity-60 mb-4">
+                Selecciona la relación que deseas quitar del grafo.
+              </p>
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {rawEdges.map((edge) => (
+                  <div
+                    key={edge.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg border text-xs"
+                    style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+                  >
+                    <span className="min-w-0 truncate">
+                      {nombreMateria(edge.source)} <span className="opacity-50">→</span> {nombreMateria(edge.target)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDesvincular(edge)}
+                      disabled={unlinkingEdgeId === edge.id}
+                      className="shrink-0 p-1.5 rounded border text-rose-500 hover:bg-rose-500/10 disabled:opacity-40"
+                      style={{ borderColor: 'var(--border-color)' }}
+                      title="Desvincular esta relación"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* Modal para Vincular Prerrequisito con Validación de Grafo (RF-03) */}

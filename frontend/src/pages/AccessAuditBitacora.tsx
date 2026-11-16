@@ -54,25 +54,25 @@ export const AccessAuditBitacora: React.FC = () => {
 
   const getEventoBadge = (tipo: string) => {
     switch (tipo) {
-      case 'LOGIN_EXITOSO':
+      case 'login_exitoso':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
             <CheckCircle2 className="w-3 h-3" /> Login Exitoso
           </span>
         );
-      case 'LOGIN_FALLIDO':
+      case 'login_fallido':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300">
             <XCircle className="w-3 h-3" /> Login Fallido
           </span>
         );
-      case 'CAMBIO_ESTADO':
+      case 'cambio_estado':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
             <Activity className="w-3 h-3" /> Transición Estado
           </span>
         );
-      case 'ACCESO_RECURSO':
+      case 'recurso_accedido':
       default:
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
@@ -123,7 +123,7 @@ export const AccessAuditBitacora: React.FC = () => {
           <div>
             <div className="text-xs opacity-60">Logins Exitosos</div>
             <div className="text-2xl font-black text-emerald-500 mt-1">
-              {estadisticasLogins?.exitosos ?? 0}
+              {estadisticasLogins?.totalExitosos ?? 0}
             </div>
             <div className="text-[11px] opacity-50 mt-0.5">Credenciales validadas</div>
           </div>
@@ -137,7 +137,7 @@ export const AccessAuditBitacora: React.FC = () => {
           <div>
             <div className="text-xs opacity-60">Logins Fallidos / Bloqueados</div>
             <div className="text-2xl font-black text-rose-500 mt-1">
-              {estadisticasLogins?.fallidos ?? 0}
+              {estadisticasLogins?.totalFallidos ?? 0}
             </div>
             <div className="text-[11px] opacity-50 mt-0.5">Intentos no autorizados</div>
           </div>
@@ -151,17 +151,17 @@ export const AccessAuditBitacora: React.FC = () => {
           <div className="flex justify-between items-center mb-1">
             <span className="text-xs opacity-60">Efectividad de Autenticación</span>
             <span className="text-xs font-bold text-emerald-500">
-              {estadisticasLogins?.efectividad_pct ?? 0}%
+              {estadisticasLogins?.tasaEfectividad ?? 0}%
             </span>
           </div>
           <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2 overflow-hidden mt-2">
             <div
               className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${estadisticasLogins?.efectividad_pct ?? 0}%` }}
+              style={{ width: `${estadisticasLogins?.tasaEfectividad ?? 0}%` }}
             />
           </div>
           <div className="text-[10px] opacity-50 mt-2">
-            Total intentos de login: {estadisticasLogins?.total ?? 0}
+            Total intentos de login: {(estadisticasLogins?.totalExitosos ?? 0) + (estadisticasLogins?.totalFallidos ?? 0)}
           </div>
         </div>
       </div>
@@ -187,27 +187,27 @@ export const AccessAuditBitacora: React.FC = () => {
                 Todos
               </button>
               <button
-                onClick={() => handleFiltroCambio('LOGIN_EXITOSO')}
+                onClick={() => handleFiltroCambio('login_exitoso')}
                 className={`px-2.5 py-1 rounded-lg border transition-all ${
-                  tipoEvento === 'LOGIN_EXITOSO' ? 'bg-emerald-600 text-white font-bold' : 'opacity-70 hover:opacity-100'
+                  tipoEvento === 'login_exitoso' ? 'bg-emerald-600 text-white font-bold' : 'opacity-70 hover:opacity-100'
                 }`}
                 style={{ borderColor: 'var(--border-color)' }}
               >
                 Logins OK
               </button>
               <button
-                onClick={() => handleFiltroCambio('LOGIN_FALLIDO')}
+                onClick={() => handleFiltroCambio('login_fallido')}
                 className={`px-2.5 py-1 rounded-lg border transition-all ${
-                  tipoEvento === 'LOGIN_FALLIDO' ? 'bg-rose-600 text-white font-bold' : 'opacity-70 hover:opacity-100'
+                  tipoEvento === 'login_fallido' ? 'bg-rose-600 text-white font-bold' : 'opacity-70 hover:opacity-100'
                 }`}
                 style={{ borderColor: 'var(--border-color)' }}
               >
                 Fallidos
               </button>
               <button
-                onClick={() => handleFiltroCambio('ACCESO_RECURSO')}
+                onClick={() => handleFiltroCambio('recurso_accedido')}
                 className={`px-2.5 py-1 rounded-lg border transition-all ${
-                  tipoEvento === 'ACCESO_RECURSO' ? 'bg-blue-600 text-white font-bold' : 'opacity-70 hover:opacity-100'
+                  tipoEvento === 'recurso_accedido' ? 'bg-blue-600 text-white font-bold' : 'opacity-70 hover:opacity-100'
                 }`}
                 style={{ borderColor: 'var(--border-color)' }}
               >
@@ -281,15 +281,15 @@ export const AccessAuditBitacora: React.FC = () => {
                         {entrada.ip_address}
                       </td>
                       <td className="py-2.5 px-3">
-                        <div className="font-mono text-[11px] max-w-[260px] truncate" title={entrada.ruta_recurso}>
+                        <div className="font-mono text-[11px] max-w-[260px] truncate" title={entrada.recurso_accedido}>
                           <span className="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold mr-1.5">
                             {entrada.metodo_http}
                           </span>
-                          {entrada.ruta_recurso}
+                          {entrada.recurso_accedido}
                         </div>
-                        {entrada.descripcion && (
-                          <div className="text-[10px] opacity-60 truncate max-w-[260px] mt-0.5" title={entrada.descripcion}>
-                            {entrada.descripcion}
+                        {entrada.detalle && (
+                          <div className="text-[10px] opacity-60 truncate max-w-[260px] mt-0.5" title={entrada.detalle}>
+                            {entrada.detalle}
                           </div>
                         )}
                       </td>
@@ -316,7 +316,7 @@ export const AccessAuditBitacora: React.FC = () => {
                         <div className="flex items-center justify-between gap-3">
                           <span className="flex items-center gap-2 min-w-0">
                             <span className="text-[11px] opacity-50">{index + 1}.</span>
-                            <span className="font-mono truncate" title={rec.ruta_recurso}>{rec.ruta_recurso}</span>
+                            <span className="font-mono truncate" title={rec.recurso_accedido}>{rec.recurso_accedido}</span>
                           </span>
                           <span className="whitespace-nowrap font-semibold opacity-70">{rec.total_accesos} accesos</span>
                         </div>

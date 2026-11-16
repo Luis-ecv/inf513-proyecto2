@@ -3,7 +3,7 @@ import api from '../services/api';
 import type { PlanEstudio, Asignatura } from '../types';
 import { 
   BookOpen, Plus, GitFork, AlertCircle, 
-  X, Search 
+  X, Search, Pencil, Trash2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getActivePlanId, setActivePlanId } from '../services/activePlan';
@@ -19,6 +19,7 @@ export const CurriculumGrid: React.FC = () => {
 
   // Estado del modal de nueva materia (RF-02)
   const [showModal, setShowModal] = useState(false);
+  const [editingAsignaturaId, setEditingAsignaturaId] = useState<number | null>(null);
   const [formSigla, setFormSigla] = useState('');
   const [formNombre, setFormNombre] = useState('');
   const [formSemestre, setFormSemestre] = useState(1);
@@ -26,6 +27,7 @@ export const CurriculumGrid: React.FC = () => {
   const [formHP, setFormHP] = useState(2);
   const [formCreditos, setFormCreditos] = useState(5);
   const [formArea, setFormArea] = useState('Programación');
+  const [formAreaPersonalizada, setFormAreaPersonalizada] = useState('');
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
@@ -123,34 +125,75 @@ export const CurriculumGrid: React.FC = () => {
     e.preventDefault();
     setFormError('');
 
-    if (!formSigla.trim() || !formNombre.trim()) {
-      setFormError('La sigla y el nombre de la materia son obligatorios.');
+    const areaFormativa = formArea === '__nueva__' ? formAreaPersonalizada.trim() : formArea;
+
+    if (!formSigla.trim() || !formNombre.trim() || !areaFormativa) {
+      setFormError('La sigla, el nombre y el área formativa son obligatorios.');
       return;
     }
 
     setSaving(true);
     try {
-      const res = await api.post('/asignaturas', {
+      const payload = {
         sigla: formSigla.trim().toUpperCase(),
         nombre: formNombre.trim(),
         semestre: formSemestre,
         horas_teoricas: formHT,
         horas_practicas: formHP,
         creditos: formCreditos,
-        area_formativa: formArea,
+        area_formativa: areaFormativa,
         id_plan_estudio: plan?.id || 1,
-      });
+      };
+      const res = editingAsignaturaId
+        ? await api.put(`/asignaturas/${editingAsignaturaId}`, payload)
+        : await api.post('/asignaturas', payload);
 
       if (res.data.success) {
         setShowModal(false);
+        setEditingAsignaturaId(null);
         setFormSigla('');
         setFormNombre('');
+        setFormArea('Programación');
+        setFormAreaPersonalizada('');
         await fetchAsignaturas();
       }
     } catch (err: any) {
       setFormError(err.response?.data?.message || 'Error al registrar la materia.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const abrirEdicionAsignatura = (asignatura: Asignatura) => {
+    const areasPredefinidas = ['Programación', 'Bases de Datos', 'Matemáticas', 'Hardware', 'Humanidades', 'Gestión'];
+    setEditingAsignaturaId(asignatura.id);
+    setFormSigla(asignatura.sigla);
+    setFormNombre(asignatura.nombre);
+    setFormSemestre(asignatura.semestre);
+    setFormHT(asignatura.horas_teoricas);
+    setFormHP(asignatura.horas_practicas);
+    setFormCreditos(asignatura.creditos);
+    if (areasPredefinidas.includes(asignatura.area_formativa)) {
+      setFormArea(asignatura.area_formativa);
+      setFormAreaPersonalizada('');
+    } else {
+      setFormArea('__nueva__');
+      setFormAreaPersonalizada(asignatura.area_formativa);
+    }
+    setFormError('');
+    setShowModal(true);
+  };
+
+  const eliminarAsignatura = async (asignatura: Asignatura) => {
+    if (!window.confirm(`¿Deseas eliminar la asignatura ${asignatura.sigla} - ${asignatura.nombre}?`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/asignaturas/${asignatura.id}`);
+      await fetchAsignaturas();
+    } catch (err: any) {
+      window.alert(err.response?.data?.message || 'No se pudo eliminar la asignatura.');
     }
   };
 
@@ -238,7 +281,19 @@ export const CurriculumGrid: React.FC = () => {
           </Link>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditingAsignaturaId(null);
+              setFormSigla('');
+              setFormNombre('');
+              setFormSemestre(1);
+              setFormHT(4);
+              setFormHP(2);
+              setFormCreditos(5);
+              setFormArea('Programación');
+              setFormAreaPersonalizada('');
+              setFormError('');
+              setShowModal(true);
+            }}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition"
             style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
           >
@@ -299,9 +354,27 @@ export const CurriculumGrid: React.FC = () => {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-extrabold text-xs text-blue-500">{asig.sigla}</span>
-                        <span className="text-[10px] font-semibold px-1 rounded border opacity-70" style={{ borderColor: 'var(--border-color)' }}>
-                          {asig.creditos} cr
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-semibold px-1 rounded border opacity-70" style={{ borderColor: 'var(--border-color)' }}>
+                            {asig.creditos} cr
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => abrirEdicionAsignatura(asig)}
+                            className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10"
+                            title="Editar asignatura"
+                          >
+                            <Pencil className="w-3 h-3 text-blue-500" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => eliminarAsignatura(asig)}
+                            className="p-1 rounded hover:bg-rose-500/10"
+                            title="Eliminar asignatura"
+                          >
+                            <Trash2 className="w-3 h-3 text-rose-500" />
+                          </button>
+                        </div>
                       </div>
                       <div className="font-semibold text-xs leading-snug line-clamp-2">
                         {asig.nombre}
@@ -417,7 +490,10 @@ export const CurriculumGrid: React.FC = () => {
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
           >
             <button 
-              onClick={() => setShowModal(false)}
+              onClick={() => {
+                setEditingAsignaturaId(null);
+                setShowModal(false);
+              }}
               className="absolute top-4 right-4 p-1.5 rounded-lg border hover:opacity-80 transition"
               style={{ borderColor: 'var(--border-color)' }}
             >
@@ -425,7 +501,7 @@ export const CurriculumGrid: React.FC = () => {
             </button>
 
             <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <BookOpen className="w-4 h-4 text-blue-500" /> Registrar Nueva Asignatura
+              <BookOpen className="w-4 h-4 text-blue-500" /> {editingAsignaturaId ? 'Editar Asignatura' : 'Registrar Nueva Asignatura'}
             </h2>
             <p className="text-xs opacity-60 mb-4">
               La materia será vinculada al plan curricular activo con cálculo automático de carga horaria.
@@ -520,7 +596,12 @@ export const CurriculumGrid: React.FC = () => {
                 <label className="block font-semibold mb-1">Área Formativa:</label>
                 <select
                   value={formArea}
-                  onChange={(e) => setFormArea(e.target.value)}
+                  onChange={(e) => {
+                    setFormArea(e.target.value);
+                    if (e.target.value !== '__nueva__') {
+                      setFormAreaPersonalizada('');
+                    }
+                  }}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                 >
@@ -530,13 +611,28 @@ export const CurriculumGrid: React.FC = () => {
                   <option value="Hardware">Hardware, Redes y Telemática</option>
                   <option value="Humanidades">Humanidades y Formación Social</option>
                   <option value="Gestión">Gestión de Proyectos e Innovación</option>
+                  <option value="__nueva__">Otra área formativa...</option>
                 </select>
+                {formArea === '__nueva__' && (
+                  <input
+                    type="text"
+                    value={formAreaPersonalizada}
+                    onChange={(e) => setFormAreaPersonalizada(e.target.value)}
+                    placeholder="Escribe la nueva área formativa"
+                    maxLength={80}
+                    className="w-full px-3 py-2 mt-2 border rounded-lg focus:outline-none"
+                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                  />
+                )}
               </div>
 
               <div className="pt-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border-color)' }}>
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setEditingAsignaturaId(null);
+                    setShowModal(false);
+                  }}
                   className="px-4 py-2 border rounded-lg hover:opacity-80 transition"
                   style={{ borderColor: 'var(--border-color)' }}
                 >
@@ -548,7 +644,7 @@ export const CurriculumGrid: React.FC = () => {
                   className="px-4 py-2 rounded-lg font-bold shadow-sm transition disabled:opacity-50"
                   style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
                 >
-                  {saving ? 'Guardando...' : 'Guardar Asignatura'}
+                  {saving ? 'Guardando...' : editingAsignaturaId ? 'Actualizar Asignatura' : 'Guardar Asignatura'}
                 </button>
               </div>
             </form>

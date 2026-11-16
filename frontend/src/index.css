@@ -178,3 +178,151 @@ body {
 * {
   border-color: var(--border-color);
 }
+
+/* --------------------------------------------------------------------------
+   IMPRESIÓN DEL REPORTE FINAL
+   -------------------------------------------------------------------------- */
+@page {
+  size: A4;
+  margin: 15mm 14mm 16mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #172033 !important;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+  }
+
+  body.report-print-mode {
+    min-width: 0;
+  }
+
+  body.report-print-mode > #root,
+  body.report-print-mode .report-print-main {
+    min-height: 0 !important;
+  }
+
+  body.report-print-mode aside,
+  body.report-print-mode header,
+  body.report-print-mode footer {
+    display: none !important;
+  }
+
+  body.report-print-mode .report-print-main {
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  body.report-print-mode .final-report-document {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #172033 !important;
+  }
+
+  .final-report-document > div:first-child {
+    padding-bottom: 18pt;
+    border-bottom: 1.5pt solid #1e3a8a !important;
+  }
+
+  .final-report-document h1 {
+    color: #172033 !important;
+    font-size: 20pt;
+    line-height: 1.15;
+  }
+
+  .final-report-document h2 {
+    color: #1e3a8a !important;
+    font-size: 11pt;
+    line-height: 1.25;
+    border-color: #94a3b8 !important;
+  }
+
+  .final-report-document h3,
+  .final-report-document p,
+  .final-report-document span,
+  .final-report-document td,
+  .final-report-document th {
+    color: inherit;
+  }
+
+  .final-report-document .opacity-40,
+  .final-report-document .opacity-50,
+  .final-report-document .opacity-60,
+  .final-report-document .opacity-70,
+  .final-report-document .opacity-80,
+  .final-report-document .opacity-90 {
+    opacity: 1 !important;
+  }
+
+  .final-report-document .report-section {
+    margin-top: 20pt;
+  }
+
+  .final-report-document .report-table {
+    table-layout: fixed;
+    font-size: 8.5pt;
+  }
+
+  .final-report-document .report-table thead {
+    display: table-header-group;
+  }
+
+  .final-report-document .report-table th {
+    background: #e8eef8 !important;
+    color: #172033 !important;
+    border-bottom: 1pt solid #64748b !important;
+    font-size: 8pt;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .final-report-document .report-table td {
+    border-bottom: 0.5pt solid #cbd5e1 !important;
+    padding-top: 5pt;
+    padding-bottom: 5pt;
+    vertical-align: top;
+  }
+
+  .final-report-document .report-table tr {
+    break-inside: avoid;
+  }
+
+  .final-report-document .report-component {
+    break-inside: avoid;
+    margin-top: 14pt;
+  }
+
+  .final-report-document .report-chapter {
+    break-inside: avoid;
+    border-color: #cbd5e1 !important;
+    background: #f8fafc !important;
+    border-radius: 3pt;
+    padding: 10pt !important;
+  }
+
+  .final-report-document .report-chapter .bg-emerald-100 {
+    border: 0.5pt solid #86efac;
+    background: #dcfce7 !important;
+    color: #166534 !important;
+  }
+
+  .final-report-document svg {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .final-report-document a {
+    color: inherit;
+    text-decoration: none;
+  }
+}

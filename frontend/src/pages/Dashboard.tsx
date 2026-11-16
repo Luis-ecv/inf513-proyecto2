@@ -6,6 +6,7 @@ import {
   GitFork, Archive, ArrowUpRight, BarChart3 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getActivePlanId } from '../services/activePlan';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -15,7 +16,9 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchMetricas = async () => {
       try {
-        const res = await api.get('/dashboard/metricas');
+        const res = await api.get('/dashboard/metricas', {
+          params: { id_plan: getActivePlanId() },
+        });
         if (res.data.success) {
           setData(res.data.metricas);
         }

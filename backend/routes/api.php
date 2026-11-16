@@ -47,6 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/planes', [CurriculumController::class, 'storePlan']);
     Route::get('/planes/{idPlan}/asignaturas', [CurriculumController::class, 'listarAsignaturas']);
     Route::post('/asignaturas', [CurriculumController::class, 'storeAsignatura']);
+    Route::put('/asignaturas/{idAsignatura}', [CurriculumController::class, 'updateAsignatura']);
+    Route::delete('/asignaturas/{idAsignatura}', [CurriculumController::class, 'destroyAsignatura']);
     Route::get('/planes/{idPlan}/grafo', [CurriculumController::class, 'grafoPrerrequisitos']);
     Route::post('/prerrequisitos', [CurriculumController::class, 'vincularPrerrequisito']);
     Route::delete('/prerrequisitos', [CurriculumController::class, 'desvincularPrerrequisito']);

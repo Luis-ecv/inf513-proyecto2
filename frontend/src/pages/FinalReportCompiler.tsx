@@ -47,6 +47,14 @@ export const FinalReportCompiler: React.FC = () => {
     compilarReporte();
   }, [compilarReporte]);
 
+  useEffect(() => {
+    document.body.classList.add('report-print-mode');
+
+    return () => {
+      document.body.classList.remove('report-print-mode');
+    };
+  }, []);
+
   const handleImprimir = () => {
     window.print();
   };
@@ -102,7 +110,7 @@ export const FinalReportCompiler: React.FC = () => {
         <div className="p-16 text-center text-xs opacity-60">No se pudo cargar la compilación del reporte.</div>
       ) : (
         /* Documento Oficial Formateado para Pantalla e Impresión */
-        <div className="max-w-4xl mx-auto rounded-2xl border p-8 md:p-12 shadow-sm space-y-10 print:p-0 print:border-none print:shadow-none print:max-w-none print:bg-white print:text-black"
+        <div className="final-report-document max-w-4xl mx-auto rounded-2xl border p-8 md:p-12 shadow-sm space-y-10 print:p-0 print:border-none print:shadow-none print:max-w-none print:bg-white print:text-black"
           style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           
           {/* Encabezado Institucional de la UAGRM */}
@@ -144,7 +152,7 @@ export const FinalReportCompiler: React.FC = () => {
           </div>
 
           {/* Sección 1: Datos Generales y Objetivos del Plan */}
-          <section className="space-y-4 break-inside-avoid">
+          <section className="report-section space-y-4 break-inside-avoid">
             <h2 className="text-base font-bold uppercase tracking-wider border-b pb-2 text-primary print:text-blue-900"
               style={{ borderColor: 'var(--border-color)' }}>
               1. Marco Institucional y Perfil de Formación
@@ -195,7 +203,7 @@ export const FinalReportCompiler: React.FC = () => {
           </section>
 
           {/* Sección 2: Malla Curricular Consolidada */}
-          <section className="space-y-4 break-inside-avoid">
+          <section className="report-section space-y-4 break-inside-avoid">
             <div className="flex justify-between items-center border-b pb-2" style={{ borderColor: 'var(--border-color)' }}>
               <h2 className="text-base font-bold uppercase tracking-wider text-primary print:text-blue-900">
                 2. Estructura de la Malla Curricular
@@ -205,8 +213,8 @@ export const FinalReportCompiler: React.FC = () => {
               </span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="overflow-x-auto print:overflow-visible">
+              <table className="report-table w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b font-bold opacity-80" style={{ borderColor: 'var(--border-color)' }}>
                     <th className="py-2 px-2 text-center">Sem.</th>
@@ -248,7 +256,7 @@ export const FinalReportCompiler: React.FC = () => {
           </section>
 
           {/* Sección 3: Capítulos Aprobados por Componente */}
-          <section className="space-y-6">
+          <section className="report-section space-y-6">
             <div className="border-b pb-2" style={{ borderColor: 'var(--border-color)' }}>
               <h2 className="text-base font-bold uppercase tracking-wider text-primary print:text-blue-900">
                 3. Capítulos Validados y Aprobados por el Comité
@@ -262,7 +270,7 @@ export const FinalReportCompiler: React.FC = () => {
               {reporte.plan.componentes.map((comp) => {
                 const capsAprobados = comp.capitulos || [];
                 return (
-                  <div key={comp.id} className="space-y-4 break-inside-avoid">
+                  <div key={comp.id} className="report-component space-y-4 break-inside-avoid">
                     <div className="flex items-center gap-2 border-b pb-1 font-bold text-xs" style={{ borderColor: 'var(--border-color)' }}>
                       <Layers className="w-4 h-4 text-primary" />
                       <span className="uppercase">COMPONENTE {comp.numero}: {comp.nombre}</span>
@@ -275,7 +283,7 @@ export const FinalReportCompiler: React.FC = () => {
                       </div>
                     ) : (
                       capsAprobados.map((cap) => (
-                        <div key={cap.id} className="p-5 rounded-xl border space-y-3"
+                        <div key={cap.id} className="report-chapter p-5 rounded-xl border space-y-3"
                           style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
                           <div className="flex justify-between items-start">
                             <div>
@@ -323,7 +331,7 @@ export const FinalReportCompiler: React.FC = () => {
           </section>
 
           {/* Sección 4: Anexo Legal de Normas y Evidencias Vigentes */}
-          <section className="space-y-4 break-inside-avoid">
+          <section className="report-section space-y-4 break-inside-avoid">
             <div className="border-b pb-2" style={{ borderColor: 'var(--border-color)' }}>
               <h2 className="text-base font-bold uppercase tracking-wider text-primary print:text-blue-900">
                 4. Anexo de Resoluciones y Evidencias Normativas
@@ -333,8 +341,8 @@ export const FinalReportCompiler: React.FC = () => {
               </p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="overflow-x-auto print:overflow-visible">
+              <table className="report-table w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b font-bold opacity-80" style={{ borderColor: 'var(--border-color)' }}>
                     <th className="py-2 px-3">Código de Norma</th>
