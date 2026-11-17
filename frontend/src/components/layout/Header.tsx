@@ -132,7 +132,7 @@ export const Header: React.FC = () => {
                     className="p-1.5 rounded cursor-pointer hover:opacity-80 flex justify-between items-center transition"
                   >
                     <span className="font-medium">{asig.sigla} - {asig.nombre}</span>
-                    <span className="text-xs opacity-60">Semestre {asig.semestre} ({asig.creditos} cr)</span>
+                    <span className="text-xs opacity-60">Semestre {asig.semestre} ({asig.creditos} credito)</span>
                   </div>
                 ))}
               </div>
