@@ -58,6 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/planes/{idPlan}/componentes', [ChapterController::class, 'listarComponentes']);
     Route::post('/componentes', [ChapterController::class, 'storeComponente']);
     Route::post('/capitulos', [ChapterController::class, 'storeCapitulo']);
+    Route::delete('/componentes/{idComponente}', [ChapterController::class, 'destroyComponente']);
+    Route::delete('/capitulos/{idCapitulo}', [ChapterController::class, 'destroyCapitulo']);
     Route::get('/capitulos/{id}', [ChapterController::class, 'showCapitulo']);
     Route::post('/capitulos/{id}/redactores', [ChapterController::class, 'asignarRedactor']);
     Route::put('/capitulos/{id}/estado', [ChapterController::class, 'cambiarEstado']);
@@ -69,6 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Módulo 3: Repositorio Digital y Búsqueda Facetada (CU6, RF-11 a RF-14)
     Route::get('/evidencias', [EvidenceController::class, 'index']);
     Route::post('/evidencias', [EvidenceController::class, 'store']);
+    Route::get('/evidencias/{idDocumento}/descargar', [EvidenceController::class, 'descargar']);
+    Route::delete('/evidencias/{idDocumento}', [EvidenceController::class, 'destroy']);
     Route::post('/evidencias/vincular-capitulo', [EvidenceController::class, 'vincularCapitulo']);
     Route::post('/evidencias/desvincular-capitulo', [EvidenceController::class, 'desvincularCapitulo']);
 
@@ -78,4 +82,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/productividad', [DashboardController::class, 'productividadUsuarios']);
     Route::get('/dashboard/planes/{idPlan}/reporte-final', [DashboardController::class, 'reporteFinal']);
     Route::get('/bitacora', [DashboardController::class, 'bitacora']);
+    Route::get('/bitacora/exportar', [DashboardController::class, 'exportarBitacora']);
 });

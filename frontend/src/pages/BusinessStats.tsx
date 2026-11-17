@@ -60,7 +60,9 @@ export const BusinessStats: React.FC = () => {
   const totalCapitulos = componentesStats.reduce((acc, c) => acc + c.totalCapitulos, 0);
   const totalAprobados = componentesStats.reduce((acc, c) => acc + c.aprobados, 0);
   const totalObservados = componentesStats.reduce((acc, c) => acc + c.observados, 0);
-  const porcentajeGlobal = totalCapitulos > 0 ? Math.round((totalAprobados / totalCapitulos) * 100) : 0;
+  const porcentajeGlobal = totalCapitulos > 0
+    ? Math.min(100, Math.max(0, Math.round((Number(totalAprobados) / Number(totalCapitulos)) * 100)))
+    : 0;
 
   const totalObsEmitidas = productividad.reduce((acc, p) => acc + p.observacionesEmitidas, 0);
   const totalObsSubsanadas = productividad.reduce((acc, p) => acc + p.observacionesSubsanadas, 0);
@@ -116,9 +118,9 @@ export const BusinessStats: React.FC = () => {
           <div className="text-2xl font-black mt-1">
             {totalAprobados} / {totalCapitulos}
           </div>
-          <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2 overflow-hidden mt-3">
+          <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden mt-3">
             <div
-              className="bg-primary h-2 rounded-full transition-all duration-500"
+              className="bg-blue-600 dark:bg-cyan-400 h-2 rounded-full transition-all duration-500"
               style={{ width: `${porcentajeGlobal}%` }}
             />
           </div>
@@ -192,14 +194,14 @@ export const BusinessStats: React.FC = () => {
                       <h3 className="font-bold text-xs">{c.nombre}</h3>
                     </div>
                     <span className="text-xs font-bold text-primary">
-                      {c.porcentajeCumplimiento}%
+                      {Number(c.porcentajeCumplimiento)}%
                     </span>
                   </div>
 
-                  <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
                     <div
-                      className="bg-primary h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${c.porcentajeCumplimiento}%` }}
+                      className="bg-blue-600 dark:bg-cyan-400 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, Math.max(0, Number(c.porcentajeCumplimiento) || 0))}%` }}
                     />
                   </div>
 

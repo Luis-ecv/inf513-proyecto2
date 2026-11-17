@@ -12,13 +12,15 @@ use App\Models\EstadoCapitulo;
 use App\Models\HistorialModificacion;
 use App\Models\Observacion;
 use App\Services\ChapterStateMachineService;
+use App\Services\AuditBitacoraService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ChapterController extends Controller
 {
     public function __construct(
-        protected ChapterStateMachineService $stateMachineService
+        protected ChapterStateMachineService $stateMachineService,
+        protected AuditBitacoraService $auditService
     ) {}
 
     /**
@@ -52,6 +54,7 @@ class ChapterController extends Controller
      */
     public function storeComponente(Request $request): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $validated = $request->validate([
             'numero' => ['required', 'integer', 'min:1'],
             'nombre' => ['required', 'string', 'max:120'],
@@ -64,6 +67,11 @@ class ChapterController extends Controller
         ]);
 
         $comp = Componente::create($validated);
+        $this->auditService->registrarCambio(
+            $request->user(),
+            $request,
+            "Se agregó el componente #{$comp->numero}: {$comp->nombre}."
+        );
 
         return response()->json([
             'success' => true,
@@ -77,6 +85,7 @@ class ChapterController extends Controller
      */
     public function storeCapitulo(Request $request): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $validated = $request->validate([
             'numero' => ['required', 'integer', 'min:1'],
             'titulo' => ['required', 'string', 'max:150'],
@@ -91,6 +100,11 @@ class ChapterController extends Controller
         $capitulo = Capitulo::create(array_merge($validated, [
             'id_estado' => ChapterStateMachineService::ESTADO_BORRADOR,
         ]));
+        $this->auditService->registrarCambio(
+            $request->user(),
+            $request,
+            "Se agregó el capítulo #{$capitulo->numero}: {$capitulo->titulo}."
+        );
 
         return response()->json([
             'success' => true,
@@ -128,6 +142,7 @@ class ChapterController extends Controller
      */
     public function asignarRedactor(Request $request, int $idCapitulo): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $request->validate([
             'id_usuario' => ['required', 'integer', 'exists:usuario,id'],
         ]);
@@ -147,6 +162,7 @@ class ChapterController extends Controller
      */
     public function cambiarEstado(ChangeChapterStateRequest $request, int $idCapitulo): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $nuevoEstadoId = $request->input('id_estado');
         $justificacion = $request->input('justificacion_tecnica');
         $usuario = $request->user();
@@ -176,6 +192,7 @@ class ChapterController extends Controller
      */
     public function storeObservacion(StoreObservationRequest $request, int $idCapitulo): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $comentario = $request->input('comentario');
         $cambiarAObservado = $request->boolean('cambiar_a_observado', true);
         $usuario = $request->user();
@@ -194,6 +211,7 @@ class ChapterController extends Controller
      */
     public function subsanarObservacion(SubsanarObservationRequest $request, int $idObservacion): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $respuesta = $request->input('respuesta_delegado');
         $usuario = $request->user();
 
@@ -220,6 +238,33 @@ class ChapterController extends Controller
             'idCapitulo' => $idCapitulo,
             'historial' => $historial,
         ]);
+    }
+
+    public function destroyComponente(Request $request, int $idComponente): JsonResponse
+    {
+        $this->rechazarInvitado($request);
+        $componente = Componente::findOrFail($idComponente);
+        $detalle = "Se eliminó el componente #{$componente->numero}: {$componente->nombre}.";
+        $componente->delete();
+        $this->auditService->registrarCambio($request->user(), $request, $detalle);
+
+        return response()->json(['success' => true, 'message' => 'Componente eliminado exitosamente.']);
+    }
+
+    public function destroyCapitulo(Request $request, int $idCapitulo): JsonResponse
+    {
+        $this->rechazarInvitado($request);
+        $capitulo = Capitulo::findOrFail($idCapitulo);
+        $detalle = "Se eliminó el capítulo #{$capitulo->numero}: {$capitulo->titulo}.";
+        $capitulo->delete();
+        $this->auditService->registrarCambio($request->user(), $request, $detalle);
+
+        return response()->json(['success' => true, 'message' => 'Capítulo eliminado exitosamente.']);
+    }
+
+    private function rechazarInvitado(Request $request): void
+    {
+        abort_if($request->user()?->esInvitado(), 403, 'El rol Invitado solo tiene permisos de visualización.');
     }
 }
 

@@ -8,6 +8,7 @@ use App\Services\AuditBitacoraService;
 use App\Services\ReportDashboardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -80,6 +81,7 @@ class DashboardController extends Controller
         if ($request->filled('tipo_evento')) {
             $query->where('tipo_evento', $request->input('tipo_evento'));
         }
+        $this->aplicarFiltrosFecha($query, $request);
 
         $accesos = $query->paginate(25);
         $recursosMasAccedidos = $this->auditService->obtenerRecursosMasAccedidos(10);
@@ -91,6 +93,47 @@ class DashboardController extends Controller
             'recursosMasAccedidos' => $recursosMasAccedidos,
             'estadisticasLogins' => $estadisticasLogins,
         ]);
+    }
+
+    public function exportarBitacora(Request $request): StreamedResponse
+    {
+        $request->validate([
+            'tipo_evento' => ['nullable', 'string'],
+            'fecha_desde' => ['nullable', 'date'],
+            'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
+        ]);
+
+        $query = BitacoraAcceso::with('usuario:id,nombre_completo,username')->orderBy('fecha_hora');
+        if ($request->filled('tipo_evento')) {
+            $query->where('tipo_evento', $request->input('tipo_evento'));
+        }
+        $this->aplicarFiltrosFecha($query, $request);
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Fecha y hora', 'Usuario', 'IP', 'Método', 'Recurso', 'Detalle']);
+            foreach ($query->cursor() as $entrada) {
+                fputcsv($handle, [
+                    $entrada->fecha_hora,
+                    $entrada->usuario?->username ?? 'Anónimo',
+                    $entrada->ip_address,
+                    $entrada->metodo_http,
+                    $entrada->recurso_accedido,
+                    $entrada->detalle,
+                ]);
+            }
+            fclose($handle);
+        }, 'bitacora-auditoria.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function aplicarFiltrosFecha($query, Request $request): void
+    {
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_hora', '>=', $request->input('fecha_desde'));
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_hora', '<=', $request->input('fecha_hasta'));
+        }
     }
 }
 

@@ -90,15 +90,19 @@ class ReportDashboardService
     public function obtenerEstadisticasPorComponente(int $idPlanEstudio): array
     {
         $componentes = Componente::where('id_plan_estudio', $idPlanEstudio)
-            ->with(['capitulos'])
+            ->with(['capitulos.estado'])
             ->orderBy('numero')
             ->get();
 
         $stats = [];
         foreach ($componentes as $comp) {
             $total = $comp->capitulos->count();
-            $aprobados = $comp->capitulos->where('id_estado', ChapterStateMachineService::ESTADO_APROBADO)->count();
-            $observados = $comp->capitulos->where('id_estado', ChapterStateMachineService::ESTADO_OBSERVADO)->count();
+            $aprobados = $comp->capitulos->filter(
+                fn (Capitulo $capitulo) => strcasecmp((string) ($capitulo->estado?->nombre ?? ''), 'Aprobado') === 0
+            )->count();
+            $observados = $comp->capitulos->filter(
+                fn (Capitulo $capitulo) => strcasecmp((string) ($capitulo->estado?->nombre ?? ''), 'Observado') === 0
+            )->count();
 
             $stats[] = [
                 'id' => $comp->id,

@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
-import type { Componente } from '../types';
+import type { Capitulo, Componente } from '../types';
 import { 
   Layers, Plus, ArrowRight, UserCheck, CheckCircle2, 
-  Clock, AlertTriangle, FileEdit, X, AlertCircle 
+  Clock, AlertTriangle, FileEdit, X, AlertCircle, Trash2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getActivePlanId } from '../services/activePlan';
+import { useAuth } from '../context/AuthContext';
 
 export const RedesignOverview: React.FC = () => {
+  const { user } = useAuth();
+  const esInvitado = user?.rol?.toLowerCase() === 'invitado';
   const [componentes, setComponentes] = useState<Componente[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -108,6 +111,37 @@ export const RedesignOverview: React.FC = () => {
     }
   };
 
+  const confirmarEliminacion = (tipo: string, nombre: string) => {
+    if (!window.confirm(`Paso 1 de 2: ¿Deseas eliminar ${tipo} "${nombre}"? Esta acción no se puede deshacer.`)) {
+      return false;
+    }
+
+    const confirmacion = window.prompt(`Paso 2 de 2: escribe ELIMINAR para confirmar la eliminación de "${nombre}".`);
+    return confirmacion?.trim().toUpperCase() === 'ELIMINAR';
+  };
+
+  const eliminarComponente = async (comp: Componente) => {
+    if (!confirmarEliminacion('el componente', comp.nombre)) return;
+
+    try {
+      await api.delete(`/componentes/${comp.id}`);
+      await fetchComponentes();
+    } catch (err: any) {
+      window.alert(err.response?.data?.message || 'No se pudo eliminar el componente.');
+    }
+  };
+
+  const eliminarCapitulo = async (cap: Capitulo) => {
+    if (!confirmarEliminacion('el capítulo', cap.titulo)) return;
+
+    try {
+      await api.delete(`/capitulos/${cap.id}`);
+      await fetchComponentes();
+    } catch (err: any) {
+      window.alert(err.response?.data?.message || 'No se pudo eliminar el capítulo.');
+    }
+  };
+
   const getStatusBadge = (estadoNombre?: string) => {
     switch (estadoNombre) {
       case 'Aprobado':
@@ -166,7 +200,7 @@ export const RedesignOverview: React.FC = () => {
           </p>
         </div>
 
-        <button
+        {!esInvitado && <button
           onClick={() => {
             setCompNumero(componentes.length + 1);
             setShowCompModal(true);
@@ -175,7 +209,7 @@ export const RedesignOverview: React.FC = () => {
           style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
         >
           <Plus className="w-4 h-4" /> Nuevo Componente
-        </button>
+        </button>}
       </div>
 
       {/* Componentes y Capítulos */}
@@ -210,7 +244,7 @@ export const RedesignOverview: React.FC = () => {
                     <div className="text-[10px] opacity-50">{aprobados} de {capitulos.length} aprobados</div>
                   </div>
 
-                  <button
+                  {!esInvitado && <button
                     onClick={() => {
                       setSelectedCompId(comp.id);
                       setChapNumero(capitulos.length + 1);
@@ -220,7 +254,14 @@ export const RedesignOverview: React.FC = () => {
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   >
                     <Plus className="w-3.5 h-3.5" /> Agregar Capítulo
-                  </button>
+                  </button>}
+                  {!esInvitado && <button
+                    onClick={() => eliminarComponente(comp)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition"
+                    style={{ borderColor: 'var(--border-color)' }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                  </button>}
                 </div>
               </div>
 
@@ -258,7 +299,16 @@ export const RedesignOverview: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t flex justify-end" style={{ borderColor: 'var(--border-color)' }}>
+                      <div className="pt-2 border-t flex justify-between items-center" style={{ borderColor: 'var(--border-color)' }}>
+                        {!esInvitado && (
+                          <button
+                            type="button"
+                            onClick={() => eliminarCapitulo(cap)}
+                            className="flex items-center gap-1 text-xs font-semibold text-rose-500 hover:underline"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                          </button>
+                        )}
                         <Link
                           to={`/capitulos/${cap.id}`}
                           className="flex items-center gap-1 text-xs font-semibold hover:underline"

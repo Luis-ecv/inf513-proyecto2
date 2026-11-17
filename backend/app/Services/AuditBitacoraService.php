@@ -64,6 +64,20 @@ class AuditBitacoraService
         ]);
     }
 
+    public function registrarCambio(User $usuario, Request $request, string $detalle): void
+    {
+        BitacoraAcceso::create([
+            'id_usuario' => $usuario->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 500),
+            'tipo_evento' => 'cambio_datos',
+            'recurso_accedido' => '/' . ltrim($request->path(), '/'),
+            'metodo_http' => $request->method(),
+            'detalle' => $detalle,
+            'fecha_hora' => now(),
+        ]);
+    }
+
     /**
      * Retorna los recursos/endpoints más accedidos (Requisito 4).
      */

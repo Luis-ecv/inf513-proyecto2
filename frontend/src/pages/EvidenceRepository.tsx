@@ -3,10 +3,14 @@ import api from '../services/api';
 import type { DocumentoEvidencia } from '../types';
 import { 
   Archive, Plus, Search, Filter, Download, 
-  Calendar, CheckCircle2, X, AlertCircle, RotateCcw, Link2 
+  Calendar, CheckCircle2, X, AlertCircle, RotateCcw, Link2, Trash2
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const EvidenceRepository: React.FC = () => {
+  const { user } = useAuth();
+  const esInvitado = user?.rol?.toLowerCase() === 'invitado';
+  const puedeEliminar = ['director', 'delegado'].includes(user?.rol?.toLowerCase() || '');
   const [documentos, setDocumentos] = useState<DocumentoEvidencia[]>([]);
   const [facetas, setFacetas] = useState<{ tipos: string[]; emisores: string[] }>({ tipos: [], emisores: [] });
   const [loading, setLoading] = useState(true);
@@ -112,6 +116,32 @@ export const EvidenceRepository: React.FC = () => {
     }
   };
 
+  const handleDescargar = async (doc: DocumentoEvidencia) => {
+    try {
+      const res = await api.get(`/evidencias/${doc.id}/descargar`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${doc.codigo_norma}-${doc.titulo}`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error al descargar evidencia:', err);
+      window.alert('No se pudo descargar este documento.');
+    }
+  };
+
+  const handleEliminar = async (doc: DocumentoEvidencia) => {
+    if (!window.confirm(`¿Deseas eliminar el documento "${doc.codigo_norma} - ${doc.titulo}"?`)) return;
+
+    try {
+      await api.delete(`/evidencias/${doc.id}`);
+      await fetchDocumentos();
+    } catch (err: any) {
+      window.alert(err.response?.data?.message || 'No se pudo eliminar el documento.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -141,13 +171,13 @@ export const EvidenceRepository: React.FC = () => {
           </p>
         </div>
 
-        <button
+        {!esInvitado && <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition self-start sm:self-auto"
           style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
         >
           <Plus className="w-4 h-4" /> Subir Evidencia Normativa
-        </button>
+        </button>}
       </div>
 
       {/* Barra de Filtros Facetados (RF-14) */}
@@ -301,15 +331,26 @@ export const EvidenceRepository: React.FC = () => {
                   <span className="text-[10px] opacity-60">
                     PDF Certificado
                   </span>
-                  <a
-                    href={`/storage/${doc.archivo_ruta}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold hover:opacity-80 transition"
-                    style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
-                  >
-                    <Download className="w-3.5 h-3.5 text-blue-500" /> Descargar
-                  </a>
+                  {!esInvitado && (
+                    <button
+                      type="button"
+                      onClick={() => handleDescargar(doc)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold hover:opacity-80 transition"
+                      style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+                    >
+                      <Download className="w-3.5 h-3.5 text-blue-500" /> Descargar
+                    </button>
+                  )}
+                  {puedeEliminar && (
+                    <button
+                      type="button"
+                      onClick={() => handleEliminar(doc)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold text-rose-500 hover:bg-rose-500/10 transition"
+                      style={{ borderColor: 'var(--border-color)' }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

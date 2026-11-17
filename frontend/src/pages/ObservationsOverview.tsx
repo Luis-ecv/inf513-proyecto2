@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, CheckCircle2, MessageSquare, Search } from 'lucide-react';
+import { MessageSquare, Search } from 'lucide-react';
 import api from '../services/api';
 import type { Capitulo, Componente, Observacion } from '../types';
 import { getActivePlanId } from '../services/activePlan';
@@ -33,8 +33,6 @@ export const ObservationsOverview: React.FC = () => {
     return text.includes(search.toLowerCase()) && (filter === 'todas' || !observacion.resuelta);
   }), [componentes, filter, search]);
 
-  const pendientes = observaciones.filter((observacion) => !observacion.resuelta).length;
-
   if (loading) return <div className="min-h-[40vh] flex items-center justify-center text-sm opacity-60">Cargando observaciones técnicas...</div>;
   if (error) return <div className="min-h-[40vh] flex items-center justify-center text-sm text-rose-500">{error}</div>;
 
@@ -44,12 +42,6 @@ export const ObservationsOverview: React.FC = () => {
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-500"><MessageSquare className="w-5 h-5" /> Módulo 2 • Seguimiento técnico</div>
         <h1 className="text-xl font-extrabold tracking-tight mt-2">Observaciones Técnicas</h1>
         <p className="text-xs opacity-60 mt-1">Revisa los comentarios emitidos sobre los capítulos y accede a cada capítulo para emitir o subsanar observaciones.</p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Metric label="Pendientes" value={pendientes} icon={<AlertTriangle className="w-5 h-5 text-amber-500" />} />
-        <Metric label="Total registradas" value={componentes.reduce((total, componente) => total + (componente.capitulos || []).reduce((count, capitulo) => count + (capitulo.observaciones?.length || 0), 0), 0)} icon={<MessageSquare className="w-5 h-5 text-blue-500" />} />
-        <Metric label="Resueltas" value={componentes.reduce((total, componente) => total + (componente.capitulos || []).reduce((count, capitulo) => count + (capitulo.observaciones || []).filter((observacion) => observacion.resuelta).length, 0), 0)} icon={<CheckCircle2 className="w-5 h-5 text-emerald-500" />} />
       </div>
 
       <div className="p-4 rounded-2xl border flex flex-col md:flex-row gap-3" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}>
@@ -83,10 +75,4 @@ export const ObservationsOverview: React.FC = () => {
       )}
     </div>
   );
-};
-
-const Metric: React.FC<{ label: string; value: number; icon: React.ReactNode }> = ({ label, value, icon }) => (
-  <div className="p-5 rounded-2xl border shadow-sm flex items-center justify-between" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
-    <div><div className="text-2xl font-extrabold">{value}</div><div className="text-xs opacity-60">{label}</div></div>{icon}
-  </div>
-);
+}

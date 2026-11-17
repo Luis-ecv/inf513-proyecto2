@@ -13,8 +13,11 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getActivePlanId } from '../services/activePlan';
+import { useAuth } from '../context/AuthContext';
 
 export const PrerequisiteGraph: React.FC = () => {
+  const { user } = useAuth();
+  const esInvitado = user?.rol?.toLowerCase() === 'invitado';
   const nodeTypes = useMemo(() => ({ customSubjectNode: CustomSubjectNode }), []);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -187,6 +190,7 @@ export const PrerequisiteGraph: React.FC = () => {
   // Conexión interactiva arrastrando aristas entre handles
   const onConnect = useCallback(
     async (params: Connection) => {
+      if (esInvitado) return;
       if (!params.source || !params.target) return;
       const sourceId = Number(params.source);
       const targetId = Number(params.target);
@@ -204,10 +208,11 @@ export const PrerequisiteGraph: React.FC = () => {
         alert(err.response?.data?.message || 'Validación de Grafo: No se puede conectar (genera ciclo o es inválido).');
       }
     },
-    []
+    [esInvitado]
   );
 
   const handleDesvincular = async (edge: Edge) => {
+    if (esInvitado) return;
     setUnlinkingEdgeId(edge.id);
     try {
       const res = await api.delete('/prerrequisitos', {
@@ -290,21 +295,21 @@ export const PrerequisiteGraph: React.FC = () => {
             </button>
           )}
 
-          <button
+          {!esInvitado && <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition"
             style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
           >
-            <Plus className="w-4 h-4" /> Vincular Prelación
-          </button>
-          <button
+            <Plus className="w-4 h-4" /> Vincular Materia
+          </button>}
+          {!esInvitado && <button
             onClick={() => setShowDesvincularModal(true)}
             disabled={rawEdges.length === 0}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold hover:opacity-80 transition disabled:opacity-40"
             style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
           >
-            <Unlink className="w-4 h-4 text-rose-500" /> Desvincular Prelación
-          </button>
+            <Unlink className="w-4 h-4 text-rose-500" /> Desvincular Materia
+          </button>}
         </div>
       </div>
 
@@ -320,6 +325,8 @@ export const PrerequisiteGraph: React.FC = () => {
           onEdgesChange={onEdgesChange}
           onNodeClick={onNodeClick}
           onConnect={onConnect}
+          nodesDraggable={!esInvitado}
+          nodesConnectable={!esInvitado}
           nodeTypes={nodeTypes}
           fitView
           minZoom={0.2}
@@ -391,7 +398,7 @@ export const PrerequisiteGraph: React.FC = () => {
                 <X className="w-4 h-4" />
               </button>
               <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-                <Unlink className="w-4 h-4 text-rose-500" /> Desvincular Prelación
+                <Unlink className="w-4 h-4 text-rose-500" /> Desvincular Materia
               </h2>
               <p className="text-xs opacity-60 mb-4">
                 Selecciona la relación que deseas quitar del grafo.
@@ -441,7 +448,7 @@ export const PrerequisiteGraph: React.FC = () => {
             </button>
 
             <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <GitFork className="w-4 h-4 text-purple-500" /> Vincular Prelación
+              <GitFork className="w-4 h-4 text-purple-500" /> Vincular Materia
             </h2>
             <p className="text-xs opacity-60 mb-4">
               El motor en el backend validará que la nueva arista no genere ciclos directos ni indirectos.

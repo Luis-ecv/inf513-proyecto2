@@ -36,6 +36,7 @@ class CurriculumController extends Controller
      */
     public function storePlan(Request $request): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $validated = $request->validate([
             'codigo' => ['required', 'string', 'max:30', 'unique:plan_estudio,codigo'],
             'carrera' => ['required', 'string', 'max:120'],
@@ -90,6 +91,7 @@ class CurriculumController extends Controller
      */
     public function storeAsignatura(StoreSubjectRequest $request): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $asignatura = Asignatura::create($request->validated());
 
         return response()->json([
@@ -104,6 +106,7 @@ class CurriculumController extends Controller
      */
     public function updateAsignatura(UpdateSubjectRequest $request, int $idAsignatura): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $asignatura = Asignatura::findOrFail($idAsignatura);
         $asignatura->update($request->validated());
 
@@ -117,8 +120,9 @@ class CurriculumController extends Controller
     /**
      * Elimina una asignatura sin relaciones de prelación pendientes.
      */
-    public function destroyAsignatura(int $idAsignatura): JsonResponse
+    public function destroyAsignatura(Request $request, int $idAsignatura): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $asignatura = Asignatura::findOrFail($idAsignatura);
         $prerrequisitos = $asignatura->materiasDependientes()->count() + $asignatura->prerrequisitos()->count();
 
@@ -156,6 +160,7 @@ class CurriculumController extends Controller
      */
     public function vincularPrerrequisito(StorePrerequisiteRequest $request): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $idAsig = $request->input('id_asignatura');
         $idReq = $request->input('id_asignatura_requisito');
 
@@ -172,6 +177,7 @@ class CurriculumController extends Controller
      */
     public function desvincularPrerrequisito(Request $request): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $request->validate([
             'id_asignatura' => ['required', 'integer'],
             'id_asignatura_requisito' => ['required', 'integer'],
@@ -200,6 +206,11 @@ class CurriculumController extends Controller
             'idAsignatura' => $idAsignatura,
             'cadena' => $cadena,
         ]);
+    }
+
+    private function rechazarInvitado(Request $request): void
+    {
+        abort_if($request->user()?->esInvitado(), 403, 'El rol Invitado solo tiene permisos de visualización.');
     }
 }
 

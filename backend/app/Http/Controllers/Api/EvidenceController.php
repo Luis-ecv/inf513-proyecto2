@@ -10,9 +10,14 @@ use App\Models\DocumentoEvidencia;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Services\AuditBitacoraService;
 
 class EvidenceController extends Controller
 {
+    public function __construct(
+        protected AuditBitacoraService $auditService
+    ) {}
+
     /**
      * Búsqueda facetada y listado del catálogo normativo de evidencias (CU6, RF-11, RF-14).
      */
@@ -73,6 +78,7 @@ class EvidenceController extends Controller
      */
     public function store(StoreEvidenceRequest $request): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $data = $request->validated();
 
         $rutaArchivo = $request->file('archivo')->store('evidencias', 'public');
@@ -87,6 +93,11 @@ class EvidenceController extends Controller
             'vigente' => true,
             'id_documento_padre' => $data['id_documento_padre'] ?? null,
         ]);
+        $this->auditService->registrarCambio(
+            $request->user(),
+            $request,
+            "Se agregó el documento de evidencia '{$doc->codigo_norma} - {$doc->titulo}'."
+        );
 
         return response()->json([
             'success' => true,
@@ -100,6 +111,7 @@ class EvidenceController extends Controller
      */
     public function vincularCapitulo(Request $request): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $request->validate([
             'id_capitulo' => ['required', 'integer', 'exists:capitulo,id'],
             'id_documento' => ['required', 'integer', 'exists:documento_evidencia,id'],
@@ -120,6 +132,7 @@ class EvidenceController extends Controller
      */
     public function desvincularCapitulo(Request $request): JsonResponse
     {
+        $this->rechazarInvitado($request);
         $request->validate([
             'id_capitulo' => ['required', 'integer', 'exists:capitulo,id'],
             'id_documento' => ['required', 'integer', 'exists:documento_evidencia,id'],
@@ -132,6 +145,35 @@ class EvidenceController extends Controller
             'success' => true,
             'message' => 'Evidencia desvinculada del capítulo.',
         ]);
+    }
+
+    public function descargar(Request $request, int $idDocumento)
+    {
+        $documento = DocumentoEvidencia::findOrFail($idDocumento);
+        abort_if($request->user()?->esInvitado(), 403, 'El rol Invitado solo puede visualizar el catálogo.');
+
+        abort_unless(Storage::disk('public')->exists($documento->archivo_ruta), 404, 'El archivo no está disponible.');
+
+        return Storage::disk('public')->download($documento->archivo_ruta, $documento->codigo_norma . '-' . $documento->titulo);
+    }
+
+    public function destroy(Request $request, int $idDocumento): JsonResponse
+    {
+        $this->rechazarInvitado($request);
+        $documento = DocumentoEvidencia::findOrFail($idDocumento);
+        $detalle = "Se eliminó el documento de evidencia '{$documento->codigo_norma} - {$documento->titulo}'.";
+        $documento->capitulos()->detach();
+        $documento->asignaturas()->detach();
+        Storage::disk('public')->delete($documento->archivo_ruta);
+        $documento->delete();
+        $this->auditService->registrarCambio($request->user(), $request, $detalle);
+
+        return response()->json(['success' => true, 'message' => 'Documento eliminado exitosamente.']);
+    }
+
+    private function rechazarInvitado(Request $request): void
+    {
+        abort_if($request->user()?->esInvitado(), 403, 'El rol Invitado solo tiene permisos de visualización.');
     }
 }
 

@@ -7,8 +7,11 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getActivePlanId, setActivePlanId } from '../services/activePlan';
+import { useAuth } from '../context/AuthContext';
 
 export const CurriculumGrid: React.FC = () => {
+  const { user } = useAuth();
+  const esInvitado = user?.rol?.toLowerCase() === 'invitado';
   const [planes, setPlanes] = useState<PlanEstudio[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<number>(getActivePlanId);
   const [plan, setPlan] = useState<PlanEstudio | null>(null);
@@ -256,14 +259,14 @@ export const CurriculumGrid: React.FC = () => {
             </select>
           </div>
 
-          <button
+          {!esInvitado && <button
             onClick={() => setShowPlanModal(true)}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold hover:opacity-80 transition"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
           >
             <Plus className="w-4 h-4 text-emerald-500" />
             <span>Nuevo Plan de Estudio</span>
-          </button>
+          </button>}
 
           <div className="px-3 py-2 rounded-xl border text-center" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
             <div className="text-xs opacity-60">Créditos Acumulados</div>
@@ -280,7 +283,7 @@ export const CurriculumGrid: React.FC = () => {
             <span>Ver Grafo de Prerrequisitos</span>
           </Link>
 
-          <button
+          {!esInvitado && <button
             onClick={() => {
               setEditingAsignaturaId(null);
               setFormSigla('');
@@ -299,7 +302,7 @@ export const CurriculumGrid: React.FC = () => {
           >
             <Plus className="w-4 h-4" />
             <span>Nueva Asignatura</span>
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -358,22 +361,24 @@ export const CurriculumGrid: React.FC = () => {
                           <span className="text-[10px] font-semibold px-1 rounded border opacity-70" style={{ borderColor: 'var(--border-color)' }}>
                             {asig.creditos} cr
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => abrirEdicionAsignatura(asig)}
-                            className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10"
-                            title="Editar asignatura"
-                          >
-                            <Pencil className="w-3 h-3 text-blue-500" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => eliminarAsignatura(asig)}
-                            className="p-1 rounded hover:bg-rose-500/10"
-                            title="Eliminar asignatura"
-                          >
-                            <Trash2 className="w-3 h-3 text-rose-500" />
-                          </button>
+                          {!esInvitado && <>
+                            <button
+                              type="button"
+                              onClick={() => abrirEdicionAsignatura(asig)}
+                              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10"
+                              title="Editar asignatura"
+                            >
+                              <Pencil className="w-3 h-3 text-blue-500" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => eliminarAsignatura(asig)}
+                              className="p-1 rounded hover:bg-rose-500/10"
+                              title="Eliminar asignatura"
+                            >
+                              <Trash2 className="w-3 h-3 text-rose-500" />
+                            </button>
+                          </>}
                         </div>
                       </div>
                       <div className="font-semibold text-xs leading-snug line-clamp-2">

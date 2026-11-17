@@ -7,8 +7,11 @@ import {
   MessageSquare, Archive, History, UserCheck, AlertCircle, 
   Send, ShieldCheck, Check, Paperclip, X
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const ChapterDetail: React.FC = () => {
+  const { user } = useAuth();
+  const esInvitado = user?.rol?.toLowerCase() === 'invitado';
   const { id } = useParams<{ id: string }>();
 
   const [capitulo, setCapitulo] = useState<Capitulo | null>(null);
@@ -280,9 +283,9 @@ export const ChapterDetail: React.FC = () => {
       >
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--primary)' }}>
-            <ShieldCheck className="w-4 h-4" /> Transición Formal de la Máquina de Estados
+            <ShieldCheck className="w-4 h-4" /> Actualizar estado del capítulo
           </h2>
-          <span className="text-[11px] opacity-60">Pista inmutable obligatoria</span>
+          <span className="text-[11px] opacity-60">El cambio quedará registrado</span>
         </div>
 
         {transError && (
@@ -316,7 +319,7 @@ export const ChapterDetail: React.FC = () => {
           </div>
 
           <div className="md:col-span-2">
-            <label className="block font-semibold mb-1">Justificación Técnica (Pista de Auditoría inmutable):</label>
+            <label className="block font-semibold mb-1">Motivo del cambio:</label>
             <input
               type="text"
               value={justificacion}
@@ -524,7 +527,7 @@ export const ChapterDetail: React.FC = () => {
                   )}
 
                   {/* Formulario de Subsanación Inline para Delegados */}
-                  {!obs.resuelta && (
+                  {!esInvitado && !obs.resuelta && (
                     <div>
                       {subsanarId === obs.id ? (
                         <form onSubmit={handleSubsanarObservacion} className="mt-2 space-y-2 text-xs">
