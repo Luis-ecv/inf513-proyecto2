@@ -16,6 +16,8 @@ import { FinalReportCompiler } from './pages/FinalReportCompiler';
 import { BusinessStats } from './pages/BusinessStats';
 import { AccessAuditBitacora } from './pages/AccessAuditBitacora';
 import { UserManagement } from './pages/UserManagement';
+import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
+import { ForceChangePasswordModal } from './components/auth/ForceChangePasswordModal';
 
 // Componente para proteger rutas privadas
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -45,6 +47,7 @@ export const AppContent: React.FC = () => {
         path="/"
         element={
           <ProtectedRoute>
+            <ForceChangePasswordModal />
             <MainLayout />
           </ProtectedRoute>
         }
@@ -60,8 +63,22 @@ export const AppContent: React.FC = () => {
         <Route path="evidencias" element={<EvidenceRepository />} />
         <Route path="reporte-final" element={<FinalReportCompiler />} />
         <Route path="estadisticas" element={<BusinessStats />} />
-        <Route path="bitacora" element={<AccessAuditBitacora />} />
-        <Route path="usuarios" element={<UserManagement />} />
+        <Route
+          path="bitacora"
+          element={
+            <RoleProtectedRoute allowedRoles={['Director']}>
+              <AccessAuditBitacora />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="usuarios"
+          element={
+            <RoleProtectedRoute allowedRoles={['Director']}>
+              <UserManagement />
+            </RoleProtectedRoute>
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

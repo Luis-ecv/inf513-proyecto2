@@ -59,6 +59,11 @@ class Capitulo extends Model
         )->withPivot('fecha_vinculacion');
     }
 
+    public function versiones()
+    {
+        return $this->hasMany(VersionCapitulo::class, 'id_capitulo')->orderBy('numero_version', 'desc');
+    }
+
     public function tieneObservacionesPendientes(): bool
     {
         return $this->observaciones()->where('resuelta', false)->exists();

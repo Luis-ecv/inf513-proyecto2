@@ -2,12 +2,20 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import api from '../services/api';
 import type { MenuItem, User } from '../types';
 
+export interface LoginResponse {
+  success: boolean;
+  message: string;
+  bloqueado?: boolean;
+  segundosRestantes?: number;
+  intentosRestantes?: number;
+}
+
 interface AuthContextProps {
   user: User | null;
   token: string | null;
   menuItems: MenuItem[];
   loading: boolean;
-  login: (login: string, pass: string) => Promise<{ success: boolean; message: string }>;
+  login: (login: string, pass: string) => Promise<LoginResponse>;
   logout: () => Promise<void>;
   refreshMenu: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
@@ -100,8 +108,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return { success: false, message: res.data.message || 'Error de autenticación' };
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Error de conexión con el servidor.';
-      return { success: false, message: msg };
+      const data = err.response?.data;
+      const msg = data?.message || 'Error de conexión con el servidor.';
+      return {
+        success: false,
+        message: msg,
+        bloqueado: Boolean(data?.bloqueado || err.response?.status === 429),
+        segundosRestantes: data?.segundos_restantes,
+        intentosRestantes: data?.intentos_restantes,
+      };
     }
   };
 

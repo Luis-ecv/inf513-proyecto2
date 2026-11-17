@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
-import type { Capitulo, DocumentoEvidencia } from '../types';
+import type { Capitulo, DocumentoEvidencia, VersionCapitulo } from '../types';
 import { 
   ArrowLeft, CheckCircle2, Clock, AlertTriangle, FileEdit, 
   MessageSquare, Archive, History, UserCheck, AlertCircle, 
-  Send, ShieldCheck, Check, Paperclip, X
+  Send, ShieldCheck, Check, Paperclip, X, GitCompare, UploadCloud,
+  FileCheck2, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { ChapterDiffViewer } from '../components/chapters/ChapterDiffViewer';
+import { extractTextFromFile } from '../utils/pdfExtractor';
 
 export const ChapterDetail: React.FC = () => {
   const { user } = useAuth();
@@ -16,7 +19,18 @@ export const ChapterDetail: React.FC = () => {
 
   const [capitulo, setCapitulo] = useState<Capitulo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'contenido' | 'observaciones' | 'evidencias' | 'historial'>('contenido');
+  const [activeTab, setActiveTab] = useState<'contenido' | 'observaciones' | 'evidencias' | 'historial' | 'versiones'>('contenido');
+
+  // Historial de Versiones y Diff (Módulo de Documentación y Redacción)
+  const [versiones, setVersiones] = useState<VersionCapitulo[]>([]);
+  const [loadingVersiones, setLoadingVersiones] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [resumenCambio, setResumenCambio] = useState('');
+  const [uploadingVersion, setUploadingVersion] = useState(false);
+  const [uploadProgressMsg, setUploadProgressMsg] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [uploadSuccess, setUploadSuccess] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Transición de Máquina de Estados (RF-06, RF-07, RF-10)
   const [nuevoEstadoId, setNuevoEstadoId] = useState<number>(1);
@@ -66,10 +80,95 @@ export const ChapterDetail: React.FC = () => {
     }
   };
 
+  const fetchVersiones = async () => {
+    setLoadingVersiones(true);
+    try {
+      const res = await api.get(`/capitulos/${id}/versiones`);
+      if (res.data.success) {
+        setVersiones(res.data.versiones);
+      }
+    } catch (err) {
+      console.error('Error al cargar historial de versiones:', err);
+    } finally {
+      setLoadingVersiones(false);
+    }
+  };
+
   useEffect(() => {
     fetchCapitulo();
     fetchEvidenciasDisponibles();
+    fetchVersiones();
   }, [id]);
+
+  const handleFileChange = (file: File | null) => {
+    setUploadError('');
+    setUploadSuccess('');
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (!['pdf', 'md', 'txt'].includes(extension || '')) {
+      setUploadError('Formato no soportado. Debe adjuntar un archivo PDF (.pdf), Markdown (.md) o Texto (.txt).');
+      setSelectedFile(null);
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setUploadError('El archivo excede el tamaño máximo permitido de 15 MB.');
+      setSelectedFile(null);
+      return;
+    }
+    setSelectedFile(file);
+  };
+
+  const handleUploadNuevaVersion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      setUploadError('Por favor selecciona o arrastra un archivo digital antes de enviar.');
+      return;
+    }
+
+    setUploadingVersion(true);
+    setUploadError('');
+    setUploadSuccess('');
+    setUploadProgressMsg('Extrayendo texto digital del documento...');
+
+    try {
+      // 1. Extraer texto del documento en el cliente
+      const extractedText = await extractTextFromFile(selectedFile);
+
+      setUploadProgressMsg('Subiendo documento y registrando versión en el servidor...');
+
+      // 2. Preparar FormData para envío multipart
+      const formData = new FormData();
+      formData.append('archivo', selectedFile);
+      formData.append('contenido_texto', extractedText);
+      if (resumenCambio.trim()) {
+        formData.append('resumen_cambio', resumenCambio.trim());
+      }
+
+      const res = await api.post(`/capitulos/${id}/versiones`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (res.data.success) {
+        setUploadSuccess(res.data.message || 'Nueva versión publicada exitosamente.');
+        setSelectedFile(null);
+        setResumenCambio('');
+        await Promise.all([fetchVersiones(), fetchCapitulo()]);
+      }
+    } catch (err: any) {
+      console.error('Error al subir nueva versión:', err);
+      setUploadError(
+        err.response?.data?.message || err.message || 'Error al procesar y subir la nueva versión.'
+      );
+    } finally {
+      setUploadingVersion(false);
+      setUploadProgressMsg('');
+    }
+  };
 
   // Ejecutar transición formal en la Máquina de Estados
   const handleCambiarEstado = async (e: React.FormEvent) => {
@@ -409,6 +508,20 @@ export const ChapterDetail: React.FC = () => {
         >
           <History className="w-4 h-4" /> Auditoría Inmutable ({historial.length})
         </button>
+
+        <button
+          onClick={() => setActiveTab('versiones')}
+          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-2 ${
+            activeTab === 'versiones' ? 'border-blue-500 text-blue-500 font-bold' : 'border-transparent opacity-60 hover:opacity-100'
+          }`}
+        >
+          <GitCompare className="w-4 h-4 text-blue-500" /> Historial de Versiones (Diff)
+          {versiones.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold border border-blue-500/20">
+              v{versiones[0]?.numero_version}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Contenido según pestaña */}
@@ -672,6 +785,177 @@ export const ChapterDetail: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Pestaña: Historial de Versiones y Diff Visual (Git-Style) */}
+      {activeTab === 'versiones' && (
+        <div className="space-y-6">
+          {/* Zona de Carga / Entrega de Nueva Versión (Subsanación de Observaciones) */}
+          {!esInvitado && (
+            <div 
+              className="p-5 rounded-2xl border shadow-sm space-y-4"
+              style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+                    <UploadCloud className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold">Publicar Nueva Versión del Documento</h3>
+                    <p className="text-xs opacity-60">
+                      Sube la versión corregida tras subsanar observaciones técnicas o redactar una nueva entrega.
+                    </p>
+                  </div>
+                </div>
+                {versiones.length > 0 && (
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 font-semibold border border-emerald-500/20 self-start sm:self-auto">
+                    Próxima versión: v{(versiones[0]?.numero_version || 0) + 1}
+                  </span>
+                )}
+              </div>
+
+              {uploadError && (
+                <div className="p-3 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              {uploadSuccess && (
+                <div className="p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900/60 dark:text-emerald-300 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>{uploadSuccess}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleUploadNuevaVersion} className="space-y-4">
+                {/* Zona Drag & Drop */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                  }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) handleFileChange(file);
+                  }}
+                  onClick={() => document.getElementById('chapter-version-file-input')?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
+                    isDragOver 
+                      ? 'border-blue-500 bg-blue-500/10' 
+                      : selectedFile 
+                      ? 'border-emerald-500/50 bg-emerald-500/5' 
+                      : 'border-neutral-300 dark:border-neutral-700 hover:border-blue-500/50'
+                  }`}
+                >
+                  <input
+                    id="chapter-version-file-input"
+                    type="file"
+                    accept=".pdf,.md,.txt"
+                    className="hidden"
+                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                    disabled={uploadingVersion}
+                  />
+
+                  {selectedFile ? (
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
+                        <FileCheck2 className="w-6 h-6" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-xs">{selectedFile.name}</div>
+                        <div className="text-[11px] opacity-60">
+                          {(selectedFile.size / 1024).toFixed(1)} KB • Formato: {selectedFile.name.split('.').pop()?.toUpperCase()}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFile(null);
+                        }}
+                        className="ml-3 p-1.5 rounded-lg border text-rose-500 hover:bg-rose-500/10 transition"
+                        style={{ borderColor: 'var(--border-color)' }}
+                        title="Quitar archivo"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-8 h-8 opacity-40 text-blue-500" />
+                      <div className="text-xs font-semibold">
+                        Arrastra y suelta tu archivo PDF o Markdown aquí, o haz clic para examinar
+                      </div>
+                      <div className="text-[11px] opacity-50">
+                        Soporta archivos .pdf (documentos digitales), .md y .txt hasta 15 MB
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Justificación o resumen del cambio */}
+                <div>
+                  <label className="block text-xs font-semibold mb-1">
+                    Motivo o Justificación de la Subsanación / Entrega (opcional):
+                  </label>
+                  <input
+                    type="text"
+                    value={resumenCambio}
+                    onChange={(e) => setResumenCambio(e.target.value)}
+                    placeholder="Ej: Se subsanaron las observaciones del Comité incorporando el perfil de egreso corregido..."
+                    className="w-full px-3 py-2 text-xs border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                    disabled={uploadingVersion}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <div className="text-[11px] opacity-60 flex items-center gap-1.5">
+                    {uploadingVersion && (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                        <span>{uploadProgressMsg}</span>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!selectedFile || uploadingVersion}
+                    className="px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+                  >
+                    {uploadingVersion ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Procesando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <GitCompare className="w-4 h-4" />
+                        <span>Publicar Versión #{(versiones[0]?.numero_version || 0) + 1}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Componente Comparador Diff */}
+          {loadingVersiones ? (
+            <div className="p-8 text-center text-xs opacity-60 flex items-center justify-center gap-2">
+              <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
+              <span>Cargando versiones y diferencias del capítulo...</span>
+            </div>
+          ) : (
+            <ChapterDiffViewer versiones={versiones} />
+          )}
         </div>
       )}
 

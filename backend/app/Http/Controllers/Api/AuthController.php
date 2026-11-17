@@ -12,7 +12,9 @@ use App\Services\AuditBitacoraService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -25,8 +27,22 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request): JsonResponse
     {
-        $loginInput = $request->input('login');
-        $password = $request->input('password');
+        $loginInput = trim((string) $request->input('login'));
+        $password = (string) $request->input('password');
+
+        $throttleKey = Str::transliterate(Str::lower($loginInput) . '|' . $request->ip());
+
+        // Verificar si la combinación usuario/IP está bloqueada por fuerza bruta (5 intentos / 5 minutos)
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return response()->json([
+                'success' => false,
+                'message' => "Acceso bloqueado por seguridad debido a múltiples intentos fallidos. Intente nuevamente en {$seconds} segundos.",
+                'bloqueado' => true,
+                'segundos_restantes' => $seconds,
+                'intentos_restantes' => 0,
+            ], 429);
+        }
 
         $user = User::with('rol')
             ->where('email', $loginInput)
@@ -43,20 +59,42 @@ class AuthController extends Controller
         }
 
         if (!$user || !$passwordValid) {
+            RateLimiter::hit($throttleKey, 300); // 300 segundos = 5 minutos
+            $intentosRestantes = RateLimiter::remaining($throttleKey, 5);
+
+            if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+                $seconds = RateLimiter::availableIn($throttleKey);
+                $this->auditService->registrarBloqueoFuerzaBruta($loginInput, $request, $seconds);
+                return response()->json([
+                    'success' => false,
+                    'message' => "Ha superado el límite de 5 intentos fallidos. Su acceso ha sido bloqueado por 5 minutos.",
+                    'bloqueado' => true,
+                    'segundos_restantes' => $seconds,
+                    'intentos_restantes' => 0,
+                ], 429);
+            }
+
             $this->auditService->registrarLoginFallido($loginInput, $request, 'Credenciales incorrectas');
             return response()->json([
                 'success' => false,
-                'message' => 'Credenciales inválidas. Verifique su correo/usuario y contraseña.',
+                'message' => "Credenciales inválidas. Le quedan {$intentosRestantes} intento(s) antes del bloqueo temporal.",
+                'bloqueado' => false,
+                'intentos_restantes' => $intentosRestantes,
             ], 401);
         }
 
         if (!$user->activo) {
+            RateLimiter::hit($throttleKey, 300);
             $this->auditService->registrarLoginFallido($loginInput, $request, 'Cuenta inactiva');
             return response()->json([
                 'success' => false,
                 'message' => 'Su cuenta se encuentra inactiva. Contacte a la Dirección de Carrera.',
+                'bloqueado' => false,
             ], 403);
         }
+
+        // Acceso exitoso: limpiar historial de intentos fallidos
+        RateLimiter::clear($throttleKey);
 
         // Registrar login exitoso en bitácora
         $this->auditService->registrarLoginExitoso($user, $request);
@@ -76,6 +114,7 @@ class AuthController extends Controller
                 'fotoRuta' => $user->foto_ruta,
                 'rol' => $user->rol?->nombre,
                 'idRol' => $user->id_rol,
+                'debeCambiarPassword' => (bool) $user->debe_cambiar_password,
             ],
         ]);
     }
@@ -113,6 +152,7 @@ class AuthController extends Controller
                 'fotoRuta' => $user->foto_ruta,
                 'rol' => $user->rol?->nombre,
                 'idRol' => $user->id_rol,
+                'debeCambiarPassword' => (bool) $user->debe_cambiar_password,
             ],
         ]);
     }
@@ -206,13 +246,19 @@ class AuthController extends Controller
 
         $request->validate([
             'nombre_completo' => 'nullable|string|max:120',
-            'password' => 'nullable|string|min:8|max:25|regex:/^[a-zA-Z0-9ñÑ]+$/',
+            'password' => [
+                'nullable',
+                'string',
+                'min:8',
+                'max:25',
+                'regex:/^(?=.*[a-zñ])(?=.*[A-ZÑ])(?=.*\d)(?=.*[@$!%*#?&_\-.])[a-zA-Z0-9ñÑ@$!%*#?&_\-.]{8,25}$/u',
+            ],
             'foto' => 'nullable|image|max:2048',
         ], [
             'nombre_completo.max' => 'El nombre no puede exceder los 120 caracteres.',
             'password.min' => 'La contraseña debe contener al menos 8 caracteres.',
             'password.max' => 'La contraseña no puede exceder los 25 caracteres.',
-            'password.regex' => 'La contraseña solo permite caracteres alfanuméricos y la letra ñ/Ñ (sin símbolos).',
+            'password.regex' => 'La contraseña debe tener entre 8 y 25 caracteres, incluir al menos una mayúscula (A-Z/Ñ), una minúscula (a-z/ñ), un número (0-9) y un carácter especial permitido (@$!%*#?&_\-.). No se permiten espacios.',
             'foto.image' => 'El archivo seleccionado debe ser una imagen válida.',
             'foto.max' => 'La imagen no debe superar los 2 MB.',
         ]);
@@ -243,6 +289,121 @@ class AuthController extends Controller
                 'fotoRuta' => $user->foto_ruta,
                 'rol' => $user->rol?->nombre,
                 'idRol' => $user->id_rol,
+                'debeCambiarPassword' => (bool) $user->debe_cambiar_password,
+            ],
+        ]);
+    }
+
+    /**
+     * Restablecimiento administrativo de contraseña por el rol Director.
+     * Asigna contraseña temporal y fuerza la bandera debe_cambiar_password = true.
+     */
+    public function resetPasswordUsuario(Request $request, int $idUsuario): JsonResponse
+    {
+        $director = $request->user();
+        $targetUser = User::with('rol')->find($idUsuario);
+
+        if (!$targetUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El usuario especificado no existe en el sistema.',
+            ], 404);
+        }
+
+        // Prevenir auto-reseteo desde la lista administrativa
+        if ($director && $director->id === $targetUser->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Para modificar su propia contraseña, utilice la opción Editar Perfil en la barra superior.',
+            ], 422);
+        }
+
+        $request->validate([
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'max:25',
+                'regex:/^(?=.*[a-zñ])(?=.*[A-ZÑ])(?=.*\d)(?=.*[@$!%*#?&_\-.])[a-zA-Z0-9ñÑ@$!%*#?&_\-.]{8,25}$/u',
+            ],
+        ], [
+            'password.required' => 'La contraseña temporal es obligatoria.',
+            'password.min' => 'La contraseña temporal debe tener al menos 8 caracteres.',
+            'password.max' => 'La contraseña temporal no puede superar los 25 caracteres.',
+            'password.regex' => 'La contraseña temporal debe incluir al menos una mayúscula (A-Z/Ñ), una minúscula (a-z/ñ), un número (0-9) y un carácter especial permitido (@$!%*#?&_\-.). No se permiten espacios.',
+        ]);
+
+        $nuevaPassword = $request->input('password');
+
+        // Actualizar contraseña y exigir cambio en próximo ingreso
+        $targetUser->password = Hash::make($nuevaPassword);
+        $targetUser->debe_cambiar_password = true;
+        $targetUser->save();
+
+        // Levantar de inmediato el bloqueo de fuerza bruta si el usuario estaba bloqueado
+        $keyEmail = Str::transliterate(Str::lower($targetUser->email) . '|' . $request->ip());
+        $keyUsername = Str::transliterate(Str::lower($targetUser->username) . '|' . $request->ip());
+        RateLimiter::clear($keyEmail);
+        RateLimiter::clear($keyUsername);
+
+        // Registrar auditoría formal
+        $this->auditService->registrarReseteoPasswordAdmin($director, $targetUser, $request);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Contraseña temporal asignada correctamente para {$targetUser->nombre_completo}. Se exigirá cambio obligatorio en su próximo inicio de sesión.",
+            'usuario' => $targetUser->load('rol'),
+        ]);
+    }
+
+    /**
+     * Cambio obligatorio de contraseña por parte del usuario tras un reseteo temporal.
+     */
+    public function cambiarPasswordObligatorio(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->debe_cambiar_password) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Su cuenta no tiene pendiente ningún cambio obligatorio de contraseña.',
+            ], 400);
+        }
+
+        $request->validate([
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'max:25',
+                'regex:/^(?=.*[a-zñ])(?=.*[A-ZÑ])(?=.*\d)(?=.*[@$!%*#?&_\-.])[a-zA-Z0-9ñÑ@$!%*#?&_\-.]{8,25}$/u',
+            ],
+        ], [
+            'password.required' => 'La nueva contraseña definitiva es obligatoria.',
+            'password.min' => 'La nueva contraseña debe tener al menos 8 caracteres.',
+            'password.max' => 'La nueva contraseña no puede exceder los 25 caracteres.',
+            'password.regex' => 'La nueva contraseña debe incluir al menos una mayúscula (A-Z/Ñ), una minúscula (a-z/ñ), un número (0-9) y un carácter especial permitido (@$!%*#?&_\-.). No se permiten espacios.',
+        ]);
+
+        $user->password = Hash::make($request->input('password'));
+        $user->debe_cambiar_password = false;
+        $user->save();
+
+        // Registrar evento de seguridad en bitácora
+        $this->auditService->registrarCambioPasswordObligatorio($user, $request);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Su contraseña definitiva ha sido establecida con éxito. Puede continuar utilizando el sistema.',
+            'user' => [
+                'id' => $user->id,
+                'nombreCompleto' => $user->nombre_completo,
+                'email' => $user->email,
+                'username' => $user->username,
+                'fotoRuta' => $user->foto_ruta,
+                'rol' => $user->rol?->nombre,
+                'idRol' => $user->id_rol,
+                'debeCambiarPassword' => false,
             ],
         ]);
     }

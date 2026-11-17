@@ -8,6 +8,7 @@ export interface User {
   foto_ruta?: string;
   rol: string;
   idRol: number;
+  debeCambiarPassword?: boolean;
 }
 
 export interface MenuItem {
@@ -138,6 +139,7 @@ export interface UsuarioBackend {
   username: string;
   foto_ruta?: string;
   activo: boolean;
+  debe_cambiar_password?: boolean;
   id_rol: number;
   rol?: Rol;
   created_at?: string;
@@ -159,6 +161,24 @@ export interface BitacoraEntry {
     username: string;
     email: string;
   } | null;
+}
+
+export interface VersionCapitulo {
+  id: number;
+  id_capitulo: number;
+  numero_version: number;
+  nombre_archivo: string;
+  archivo_ruta: string;
+  contenido_texto: string;
+  resumen_cambio?: string | null;
+  id_usuario: number;
+  usuario?: {
+    id: number;
+    nombre_completo: string;
+    username: string;
+  };
+  created_at: string;
+  updated_at: string;
 }
 
 export interface RecursoMasAccedido {
@@ -208,5 +228,6 @@ export interface ReporteFinalPayload {
   evidenciasVigentes: DocumentoEvidencia[];
   fechaCompilacion: string;
 }
+
 
 

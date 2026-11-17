@@ -11,6 +11,7 @@ use App\Models\Componente;
 use App\Models\EstadoCapitulo;
 use App\Models\HistorialModificacion;
 use App\Models\Observacion;
+use App\Models\VersionCapitulo;
 use App\Services\ChapterStateMachineService;
 use App\Services\AuditBitacoraService;
 use Illuminate\Http\JsonResponse;
@@ -260,6 +261,86 @@ class ChapterController extends Controller
         $this->auditService->registrarCambio($request->user(), $request, $detalle);
 
         return response()->json(['success' => true, 'message' => 'Capítulo eliminado exitosamente.']);
+    }
+
+    /**
+     * Listado cronológico de versiones de documentos de un capítulo (CU4, CU5).
+     */
+    public function listarVersiones(int $idCapitulo): JsonResponse
+    {
+        $capitulo = Capitulo::findOrFail($idCapitulo);
+        $versiones = VersionCapitulo::with('usuario:id,nombre_completo,username')
+            ->where('id_capitulo', $idCapitulo)
+            ->orderBy('numero_version', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'capitulo' => [
+                'id' => $capitulo->id,
+                'numero' => $capitulo->numero,
+                'titulo' => $capitulo->titulo,
+                'contenidoActual' => $capitulo->contenido,
+            ],
+            'versiones' => $versiones,
+        ]);
+    }
+
+    /**
+     * Publicación de una nueva versión del documento del capítulo (subsanación o entrega).
+     */
+    public function storeVersion(Request $request, int $idCapitulo): JsonResponse
+    {
+        $this->rechazarInvitado($request);
+        $capitulo = Capitulo::findOrFail($idCapitulo);
+
+        $request->validate([
+            'archivo' => ['required', 'file', 'mimes:pdf,txt,md', 'max:15360'],
+            'contenido_texto' => ['required', 'string'],
+            'resumen_cambio' => ['nullable', 'string', 'max:500'],
+        ], [
+            'archivo.required' => 'Debe adjuntar el archivo digital (PDF o Markdown).',
+            'archivo.mimes' => 'El formato del archivo debe ser PDF, Markdown (.md) o Texto (.txt).',
+            'archivo.max' => 'El archivo no puede exceder los 15 MB.',
+            'contenido_texto.required' => 'No se pudo obtener el contenido de texto del documento para el comparador.',
+        ]);
+
+        $file = $request->file('archivo');
+        $nombreOriginal = $file->getClientOriginalName();
+        $rutaArchivo = $file->store('capitulos_versiones', 'public');
+
+        $ultimaVersion = VersionCapitulo::where('id_capitulo', $idCapitulo)->max('numero_version') ?? 0;
+        $nuevaVersion = $ultimaVersion + 1;
+
+        $version = VersionCapitulo::create([
+            'id_capitulo' => $idCapitulo,
+            'numero_version' => $nuevaVersion,
+            'nombre_archivo' => $nombreOriginal,
+            'archivo_ruta' => $rutaArchivo,
+            'contenido_texto' => $request->input('contenido_texto'),
+            'resumen_cambio' => $request->input('resumen_cambio') ?: "Entrega de Versión #{$nuevaVersion}",
+            'id_usuario' => $request->user()->id,
+        ]);
+
+        // Sincronizar el contenido redactado del capítulo con la última versión
+        $capitulo->contenido = $request->input('contenido_texto');
+        $capitulo->save();
+
+        // Auditoría inmutable
+        $this->auditService->registrarEntregaVersion(
+            $request->user(),
+            $idCapitulo,
+            $nuevaVersion,
+            $nombreOriginal,
+            $request
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => "Versión #{$nuevaVersion} publicada exitosamente para el Capítulo #{$capitulo->numero}.",
+            'version' => $version->load('usuario:id,nombre_completo,username'),
+            'capitulo' => $capitulo,
+        ], 201);
     }
 
     private function rechazarInvitado(Request $request): void

@@ -22,6 +22,7 @@ class User extends Authenticatable
         'password',
         'foto_ruta',
         'activo',
+        'debe_cambiar_password',
         'fecha_registro',
         'id_rol',
     ];
@@ -36,6 +37,7 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
             'activo' => 'boolean',
+            'debe_cambiar_password' => 'boolean',
             'fecha_registro' => 'datetime',
         ];
     }

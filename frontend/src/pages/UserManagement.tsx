@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import type { UsuarioBackend, Rol } from '../types';
 import { 
   Users, UserPlus, Shield, Mail, CheckCircle2, 
-  AlertCircle, X, Camera, Lock, User as UserIcon, RefreshCw
+  AlertCircle, X, Camera, Lock, User as UserIcon, RefreshCw,
+  KeyRound, Copy, Check
 } from 'lucide-react';
 
 export const UserManagement: React.FC = () => {
+  const { user: currentUser } = useAuth();
   const [usuarios, setUsuarios] = useState<UsuarioBackend[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,10 +30,32 @@ export const UserManagement: React.FC = () => {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
-  // Validación de contraseña en tiempo real (Políticas heredadas de Java: 8-25 chars, alfanumérico + ñ/Ñ)
+  // Modal para restablecer contraseña
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [targetUser, setTargetUser] = useState<UsuarioBackend | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetSaving, setResetSaving] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  // Validación de contraseña temporal de reseteo
+  const isResetLengthValid = resetPassword.length >= 8 && resetPassword.length <= 25;
+  const isResetHasUpper = /[A-ZÑ]/.test(resetPassword);
+  const isResetHasLower = /[a-zñ]/.test(resetPassword);
+  const isResetHasNumber = /[0-9]/.test(resetPassword);
+  const isResetHasSpecial = /[@$!%*#?&_\-.]/.test(resetPassword);
+  const isResetHasOnlyAllowed = /^[a-zA-Z0-9ñÑ@$!%*#?&_\-.]+$/.test(resetPassword);
+  const isResetValid = isResetLengthValid && isResetHasUpper && isResetHasLower && isResetHasNumber && isResetHasSpecial && isResetHasOnlyAllowed;
+
+  // Validación de contraseña en tiempo real: 8-25 caracteres, mayúscula, minúscula, número y símbolo permitido
   const isPasswordLengthValid = password.length >= 8 && password.length <= 25;
-  const isPasswordRegexValid = /^[a-zA-Z0-9ñÑ]+$/.test(password);
-  const isPasswordValid = isPasswordLengthValid && isPasswordRegexValid;
+  const hasUpperCase = /[A-ZÑ]/.test(password);
+  const hasLowerCase = /[a-zñ]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[@$!%*#?&_\-.]/.test(password);
+  const hasOnlyAllowedChars = /^[a-zA-Z0-9ñÑ@$!%*#?&_\-.]+$/.test(password);
+  const isPasswordValid = isPasswordLengthValid && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar && hasOnlyAllowedChars;
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -77,7 +102,7 @@ export const UserManagement: React.FC = () => {
     }
 
     if (!isPasswordValid) {
-      setFormError('La contraseña no cumple con la política de seguridad (8-25 caracteres alfanuméricos, sin símbolos).');
+      setFormError('La contraseña no cumple con la política de seguridad (8-25 caracteres, al menos una mayúscula, una minúscula, un número y un símbolo permitido).');
       return;
     }
 
@@ -136,6 +161,56 @@ export const UserManagement: React.FC = () => {
       case 3: // Invitado
       default:
         return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300';
+    }
+  };
+
+  const handleAbrirResetModal = (u: UsuarioBackend) => {
+    setTargetUser(u);
+    setResetPassword('');
+    setResetError('');
+    setResetSuccess('');
+    setCopied(false);
+    setShowResetModal(true);
+  };
+
+  const handleGenerarSugerencia = () => {
+    setResetPassword('Uagrm2026ñ*');
+    setResetError('');
+  };
+
+  const handleEjecutarReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetUser || !isResetValid) return;
+
+    setResetSaving(true);
+    setResetError('');
+    setResetSuccess('');
+
+    try {
+      const res = await api.post(`/usuarios/${targetUser.id}/reset-password`, {
+        password: resetPassword,
+      });
+
+      if (res.data.success) {
+        setResetSuccess(res.data.message || 'Contraseña temporal asignada correctamente.');
+        setUsuarios((prev) =>
+          prev.map((u) => (u.id === targetUser.id ? { ...u, debe_cambiar_password: true } : u))
+        );
+      } else {
+        setResetError(res.data.message || 'No se pudo restablecer la contraseña.');
+      }
+    } catch (err: any) {
+      setResetError(err.response?.data?.message || 'Error de comunicación al restablecer la contraseña.');
+    } finally {
+      setResetSaving(false);
+    }
+  };
+
+  const handleCopiarClave = () => {
+    if (resetPassword) {
+      navigator.clipboard.writeText(resetPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -226,6 +301,38 @@ export const UserManagement: React.FC = () => {
                     <span className="text-[10px] opacity-40">
                       ID #{u.id}
                     </span>
+                  </div>
+
+                  {/* Alerta de cambio obligatorio pendiente */}
+                  {u.debe_cambiar_password && (
+                    <div className="mt-2 px-2 py-1 rounded-lg text-[10px] font-semibold bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <KeyRound className="w-3 h-3 shrink-0" />
+                      <span>Cambio de contraseña pendiente</span>
+                    </div>
+                  )}
+
+                  {/* Botón de acción para el Director */}
+                  <div className="pt-2.5 mt-2.5 border-t flex items-center justify-end" style={{ borderColor: 'var(--border-color)' }}>
+                    {u.id === currentUser?.id ? (
+                      <span className="text-[10px] opacity-50 italic">
+                        Su cuenta (use Editar Perfil)
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleAbrirResetModal(u)}
+                        className="px-2.5 py-1 rounded-lg text-xs font-semibold border flex items-center gap-1.5 transition hover:opacity-80"
+                        style={{
+                          borderColor: 'var(--border-color)',
+                          backgroundColor: 'var(--bg-app)',
+                          color: 'var(--text-main)',
+                        }}
+                        title={`Restablecer contraseña para ${u.nombre_completo}`}
+                      >
+                        <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Restablecer</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -387,8 +494,17 @@ export const UserManagement: React.FC = () => {
                   <div className={`flex items-center gap-1.5 ${isPasswordLengthValid ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Longitud entre 8 y 25 caracteres ({password.length}/25)
                   </div>
-                  <div className={`flex items-center gap-1.5 ${isPasswordRegexValid && password.length > 0 ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
-                    <CheckCircle2 className="w-3 h-3" /> Solo letras (a-z, A-Z), números (0-9) y letra ñ/Ñ (sin símbolos ni espacios)
+                  <div className={`flex items-center gap-1.5 ${hasUpperCase && hasLowerCase ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Al menos una mayúscula (A-Z, Ñ) y una minúscula (a-z, ñ)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Al menos un dígito numérico (0-9)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${hasSpecialChar ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Al menos un símbolo permitido (@$!%*#?&_\-.)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${hasOnlyAllowedChars && password.length > 0 ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Sin espacios ni caracteres prohibidos
                   </div>
                 </div>
               </div>
@@ -419,6 +535,155 @@ export const UserManagement: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal para Restablecer Contraseña por el Director */}
+      {showResetModal && targetUser && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div
+            className="w-full max-w-md rounded-2xl border shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
+          >
+            <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-amber-500" />
+                <h3 className="font-bold text-base">Restablecer Contraseña</h3>
+              </div>
+              <button
+                onClick={() => setShowResetModal(false)}
+                className="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 opacity-60"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Información del usuario afectado */}
+            <div className="p-3 rounded-xl bg-black/5 dark:bg-white/5 border space-y-1" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="text-xs font-bold">{targetUser.nombre_completo}</div>
+              <div className="text-[11px] opacity-70 flex items-center justify-between">
+                <span>@{targetUser.username} • {targetUser.email}</span>
+                <span className="font-semibold">{targetUser.rol?.nombre}</span>
+              </div>
+            </div>
+
+            {resetError && (
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{resetError}</span>
+              </div>
+            )}
+
+            {resetSuccess ? (
+              <div className="space-y-4 text-xs">
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                  <div>
+                    <div className="font-bold">Contraseña restablecida con éxito</div>
+                    <div className="text-[11px] opacity-90">{resetSuccess}</div>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl border bg-black/5 dark:bg-white/5 space-y-2" style={{ borderColor: 'var(--border-color)' }}>
+                  <span className="text-[11px] opacity-70 block font-semibold">Contraseña temporal asignada:</span>
+                  <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-white dark:bg-black/40 border font-mono font-bold text-sm">
+                    <span className="text-primary tracking-wider">{resetPassword}</span>
+                    <button
+                      type="button"
+                      onClick={handleCopiarClave}
+                      className="px-2.5 py-1 rounded border text-xs flex items-center gap-1 hover:opacity-80 transition cursor-pointer"
+                      style={{ borderColor: 'var(--border-color)' }}
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copied ? 'Copiado!' : 'Copiar'}</span>
+                    </button>
+                  </div>
+                  <span className="text-[10px] opacity-60 block">
+                    * El usuario deberá cambiar obligatoriamente esta contraseña en su próximo inicio de sesión.
+                  </span>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowResetModal(false)}
+                    className="px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:opacity-90 cursor-pointer"
+                  >
+                    Entendido / Cerrar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleEjecutarReset} className="space-y-4 text-xs">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-semibold">Nueva Contraseña Temporal *</label>
+                    <button
+                      type="button"
+                      onClick={handleGenerarSugerencia}
+                      className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Usar sugerencia: Uagrm2026ñ*</span>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    placeholder="ej: Uagrm2026ñ*"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none font-mono"
+                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                    required
+                  />
+                </div>
+
+                {/* Guía de validación en tiempo real */}
+                <div className="p-2.5 rounded-lg bg-black/5 dark:bg-white/5 space-y-1 text-[11px] border" style={{ borderColor: 'var(--border-color)' }}>
+                  <div className={`flex items-center gap-1.5 ${isResetLengthValid ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Longitud entre 8 y 25 caracteres ({resetPassword.length}/25)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${isResetHasUpper && isResetHasLower ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Al menos una mayúscula (A-Z, Ñ) y una minúscula (a-z, ñ)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${isResetHasNumber ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Al menos un dígito numérico (0-9)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${isResetHasSpecial ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Al menos un símbolo permitido (@$!%*#?&_\-.)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${isResetHasOnlyAllowed && resetPassword.length > 0 ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                    <CheckCircle2 className="w-3 h-3" /> Sin espacios ni caracteres prohibidos
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowResetModal(false)}
+                    className="px-4 py-2 border rounded-lg hover:opacity-80 cursor-pointer"
+                    style={{ borderColor: 'var(--border-color)' }}
+                    disabled={resetSaving}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resetSaving || !isResetValid}
+                    className="px-5 py-2 bg-primary text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-40 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {resetSaving ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Restableciendo...
+                      </>
+                    ) : (
+                      'Restablecer Contraseña'
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>,
         document.body

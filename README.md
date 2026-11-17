@@ -178,20 +178,25 @@ cd TW-php
 
 La base de datos viene sembrada con cuentas de usuario correspondientes a los roles académicos del negocio:
 
-| Usuario (Username) | Correo Institucional | Contraseña | Rol del Negocio | Permisos y Alcance |
+| Usuario (Username) | Correo Registrado | Contraseña | Rol del Negocio | Botón en Login / Alcance |
 | :--- | :--- | :--- | :--- | :--- |
-| **`ebalcazar`** | `ebalcazar@uagrm.edu.bo` | `Admin12345` | **Director** | Acceso total: aprobación final de capítulos, gestión de usuarios, auditoría, estadísticas y reporte oficial. |
-| **`luisfernando`** | `luisfernando@uagrm.edu.bo` | `Delegado123` | **Delegado** | Redacción técnica, subsanación de observaciones, carga de evidencias, gestión de malla y grafo. |
-| **`carlosmarca`** | `cmarca@uagrm.edu.bo` | `Docente123` | **Delegado** | Docente del comité, redactor de capítulos y emisor de observaciones técnicas. |
-| **`invitado`** | `invitado@uagrm.edu.bo` | `Invitado123` | **Invitado** | Acceso de solo lectura al avance, malla curricular, grafo y repositorio de evidencias. |
+| **`director`** | `grupo02sa@tecnoweb.org.bo` | `Director123!` | **Director** | Cuenta institucional: Ing. Evans Balcázar (Director de Carrera). |
+| **`cmarca`** | `marcacarlosestudio@gmail.com` | `Carlos123#` | **Director** | Botón rápido: **Carlos Marca** (Gestión de usuarios, aprobación final, auditoría y estadísticas). |
+| **`luisecv`** | `luis.ecv1111@gmail.com` | `Luis2026ñ#` | **Director** | Botón rápido: **Luis Fernando** (Rediseño, redacción de capítulos, subsanación y evidencias). |
+| **`tvalda`** | `taniavaldadonozo@gmail.com` | `Tania2026ñ!` | **Director** | Botón rápido: **Tania Valda** (Revisión técnica de capítulos y observaciones). |
+| **`croca`** | `croca@uagrm.edu.bo` | `Delegado2026ñ$` | **Delegado** | Botón rápido: **Carlos Roca** (Redactor y revisor técnico de capítulos). |
+| **`mmendoza`** | `mmendoza@uagrm.edu.bo` | `Invitado2026ñ*` | **Invitado** | Botón rápido: **Mario Mendoza** (Acceso de solo lectura a malla curricular, grafo y evidencias). |
 
 > [!IMPORTANT]
-> **Política de Seguridad de Contraseñas (UAGRM):**  
-> Toda contraseña registrada debe cumplir estrictamente con: entre **8 y 25 caracteres**, formada únicamente por caracteres alfanuméricos y la letra **ñ / Ñ** (`^[a-zA-Z0-9ñÑ]+$`). No se admiten espacios ni caracteres especiales.
+> **Política de Seguridad y Blindaje de Accesos:**  
+> 1. **Complejidad de Contraseña:** Toda contraseña debe tener entre **8 y 25 caracteres**, incluir al menos **1 mayúscula (A-Z o Ñ)**, **1 minúscula (a-z o ñ)**, **1 número (0-9)** y **1 símbolo especial permitido (`@$!%*#?&_\-.`)**. No se admiten espacios ni caracteres no autorizados.
+> 2. **Defensa Anti Fuerza Bruta:** Máximo 5 intentos fallidos por credencial e IP. Al 5to fallo consecutivo, el backend bloquea las solicitudes por **5 minutos (300 s)** retornando código HTTP `429`, la interfaz activa un modal de bloqueo con cuenta regresiva en vivo, y se registra el evento `bloqueo_fuerza_bruta` en la bitácora inmutable.
+> 3. **Blindaje de Rutas (RBAC) y 403 Híbrido:** Endpoints administrativos `/api/usuarios` y `/api/bitacora` protegidos mediante middleware `role:Director`. En la SPA, si un rol sin privilegios intenta acceder manualmente a rutas administrativas, se renderiza una vista con código `403 - Acceso Denegado` que redirige automáticamente tras 3 segundos al dashboard del usuario.
+> 4. **Recuperación Administrativa de Contraseña y Cambio Obligatorio:** El rol Director puede restablecer la contraseña de cualquier usuario a una clave temporal institucionalmente válida (sugerencia rápida: `Uagrm2026ñ*`). El backend marca la bandera `debe_cambiar_password = true`, limpia de inmediato cualquier bloqueo por fuerza bruta y audita la acción. Al autenticarse con la clave temporal, la SPA despliega de forma obligatoria el modal de actualización definitiva, impidiendo la navegación hasta definir una contraseña personal.
 
 ---
 
-## 7. Catálogo Completo de Endpoints RESTful (36 Rutas)
+## 7. Catálogo Completo de Endpoints RESTful (38 Rutas)
 
 ### 7.1. Autenticación, Sesión y Menú Dinámico
 | Método | Endpoint | Descripción | Acceso |
@@ -200,6 +205,8 @@ La base de datos viene sembrada con cuentas de usuario correspondientes a los ro
 | `POST` | `/api/auth/logout` | Revoca y destruye el token activo | Autenticado |
 | `GET` | `/api/auth/me` | Retorna los datos del usuario en sesión | Autenticado |
 | `GET` | `/api/auth/menu` | Retorna los ítems de navegación según el rol del usuario | Autenticado |
+| `POST` | `/api/auth/perfil` | Actualización de perfil propio (nombre, foto, contraseña voluntaria) | Autenticado |
+| `POST` | `/api/auth/cambiar-password-obligatorio` | Establece la contraseña definitiva tras reseteo administrativo temporal | Autenticado |
 
 ### 7.2. Sitios, Visitas y Búsqueda Global
 | Método | Endpoint | Descripción | Acceso |
@@ -219,7 +226,7 @@ La base de datos viene sembrada con cuentas de usuario correspondientes a los ro
 | `DELETE`| `/api/prerrequisitos` | Desvincula una relación de prerrequisito | Delegado/Director |
 | `GET` | `/api/asignaturas/{id}/dependencias`| Cadena completa de dependencias anteriores y posteriores | Autenticado |
 
-### 7.4. Componentes, Capítulos y Máquina de Estados
+### 7.4. Componentes, Capítulos, Máquina de Estados y Control de Versiones (Diff)
 | Método | Endpoint | Descripción | Acceso |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/planes/{idPlan}/componentes` | Estructura temática con capítulos y estados | Autenticado |
@@ -232,6 +239,8 @@ La base de datos viene sembrada con cuentas de usuario correspondientes a los ro
 | `POST` | `/api/capitulos/{id}/observaciones` | Registra observación técnica y conmuta a *Observado* | Delegado/Director |
 | `PUT` | `/api/observaciones/{id}/subsanar` | Subsanación de observación técnica por delegado redactor | Delegado/Director |
 | `GET` | `/api/capitulos/{id}/historial` | Bitácora inmutable de auditoría del capítulo | Autenticado |
+| `GET` | `/api/capitulos/{id}/versiones` | Historial cronológico de versiones y texto extraído para comparador Diff | Autenticado |
+| `POST` | `/api/capitulos/{id}/versiones` | Publica nueva versión de entrega/subsanación (PDF/MD/TXT) y sincroniza contenido | Delegado/Director |
 
 ### 7.5. Repositorio de Evidencias Digitales
 | Método | Endpoint | Descripción | Acceso |
@@ -256,6 +265,7 @@ La base de datos viene sembrada con cuentas de usuario correspondientes a los ro
 | `GET` | `/api/roles` | Catálogo de roles de negocio | Director |
 | `GET` | `/api/usuarios` | Listado de usuarios con foto y rol | Director |
 | `POST` | `/api/usuarios` | Registro de nuevo usuario con foto y validación de contraseña | Director |
+| `POST` | `/api/usuarios/{id}/reset-password` | Restablecimiento administrativo de clave temporal (activa cambio obligatorio) | Director |
 
 ---
 
@@ -302,7 +312,7 @@ TW-php/
 │   │   ├── migrations/           # 17 migraciones ordenadas (27 tablas en PostgreSQL)
 │   │   └── seeders/              # Seeders iniciales con Plan 187-4 y usuarios
 │   ├── routes/
-│   │   └── api.php               # Definición de las 36 rutas RESTful
+│   │   └── api.php               # Definición de las 38 rutas RESTful
 │   └── storage/app/public/       # Directorio de almacenamiento para fotos y evidencias
 ├── frontend/                     # Aplicación SPA en React 19 + TypeScript
 │   ├── src/

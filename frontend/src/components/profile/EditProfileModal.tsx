@@ -27,10 +27,14 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
   if (!isOpen || !user) return null;
 
-  // Validación preventiva de la política estricta de la UAGRM
+  // Validación preventiva de la política institucional de seguridad
   const isPasswordLengthValid = password.length === 0 || (password.length >= 8 && password.length <= 25);
-  const isPasswordRegexValid = password.length === 0 || /^[a-zA-Z0-9ñÑ]+$/.test(password);
-  const isPasswordValid = isPasswordLengthValid && isPasswordRegexValid;
+  const hasUpperCase = password.length === 0 || /[A-ZÑ]/.test(password);
+  const hasLowerCase = password.length === 0 || /[a-zñ]/.test(password);
+  const hasNumber = password.length === 0 || /[0-9]/.test(password);
+  const hasSpecialChar = password.length === 0 || /[@$!%*#?&_\-.]/.test(password);
+  const hasOnlyAllowedChars = password.length === 0 || /^[a-zA-Z0-9ñÑ@$!%*#?&_\-.]+$/.test(password);
+  const isPasswordValid = isPasswordLengthValid && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar && hasOnlyAllowedChars;
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -46,7 +50,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
     setFormSuccess('');
 
     if (password && !isPasswordValid) {
-      setFormError('La nueva contraseña no cumple con la política de seguridad (8-25 caracteres alfanuméricos, sin símbolos).');
+      setFormError('La nueva contraseña no cumple con la política de seguridad (8-25 caracteres, al menos una mayúscula, una minúscula, un número y un símbolo permitido).');
       return;
     }
 
@@ -237,15 +241,27 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
             {password.length > 0 && (
               <div className="mt-2 p-2.5 rounded-lg border space-y-1 text-[11px]" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}>
                 <div className="font-semibold text-amber-500 flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5" /> Política de Seguridad UAGRM:
+                  <AlertTriangle className="w-3.5 h-3.5" /> Política de Seguridad Institucional:
                 </div>
                 <div className={`flex items-center gap-1.5 ${isPasswordLengthValid ? 'text-emerald-500 font-medium' : 'opacity-60'}`}>
                   {isPasswordLengthValid ? <Check className="w-3 h-3" /> : <span className="w-3 h-3 inline-block">•</span>}
                   <span>Longitud entre 8 y 25 caracteres ({password.length}/25)</span>
                 </div>
-                <div className={`flex items-center gap-1.5 ${isPasswordRegexValid ? 'text-emerald-500 font-medium' : 'opacity-60'}`}>
-                  {isPasswordRegexValid ? <Check className="w-3 h-3" /> : <span className="w-3 h-3 inline-block">•</span>}
-                  <span>Solo letras (incluye ñ/Ñ) y números (sin caracteres especiales)</span>
+                <div className={`flex items-center gap-1.5 ${hasUpperCase && hasLowerCase ? 'text-emerald-500 font-medium' : 'opacity-60'}`}>
+                  {hasUpperCase && hasLowerCase ? <Check className="w-3 h-3" /> : <span className="w-3 h-3 inline-block">•</span>}
+                  <span>Al menos una mayúscula (A-Z/Ñ) y una minúscula (a-z/ñ)</span>
+                </div>
+                <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-500 font-medium' : 'opacity-60'}`}>
+                  {hasNumber ? <Check className="w-3 h-3" /> : <span className="w-3 h-3 inline-block">•</span>}
+                  <span>Al menos un número (0-9)</span>
+                </div>
+                <div className={`flex items-center gap-1.5 ${hasSpecialChar ? 'text-emerald-500 font-medium' : 'opacity-60'}`}>
+                  {hasSpecialChar ? <Check className="w-3 h-3" /> : <span className="w-3 h-3 inline-block">•</span>}
+                  <span>Al menos un carácter especial (@$!%*#?&_\-.)</span>
+                </div>
+                <div className={`flex items-center gap-1.5 ${hasOnlyAllowedChars ? 'text-emerald-500 font-medium' : 'opacity-60'}`}>
+                  {hasOnlyAllowedChars ? <Check className="w-3 h-3" /> : <span className="w-3 h-3 inline-block">•</span>}
+                  <span>Sin espacios ni caracteres prohibidos</span>
                 </div>
               </div>
             )}

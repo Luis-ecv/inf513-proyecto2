@@ -35,12 +35,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::get('/menu', [AuthController::class, 'menu']);
         Route::post('/perfil', [AuthController::class, 'actualizarPerfil']);
+        Route::post('/cambiar-password-obligatorio', [AuthController::class, 'cambiarPasswordObligatorio']);
     });
 
-    // Gestión de Usuarios y Roles (CU1)
-    Route::get('/roles', [AuthController::class, 'roles']);
-    Route::get('/usuarios', [AuthController::class, 'listarUsuarios']);
-    Route::post('/usuarios', [AuthController::class, 'storeUsuario']);
+    // Gestión de Usuarios y Roles (CU1, Req. 4: Solo rol Director)
+    Route::middleware('role:Director')->group(function () {
+        Route::get('/roles', [AuthController::class, 'roles']);
+        Route::get('/usuarios', [AuthController::class, 'listarUsuarios']);
+        Route::post('/usuarios', [AuthController::class, 'storeUsuario']);
+        Route::post('/usuarios/{id}/reset-password', [AuthController::class, 'resetPasswordUsuario']);
+        Route::get('/bitacora', [DashboardController::class, 'bitacora']);
+        Route::get('/bitacora/exportar', [DashboardController::class, 'exportarBitacora']);
+    });
 
     // Módulo 1: Malla Curricular y Grafo de Prerrequisitos (CU2, CU3, RF-01 a RF-04)
     Route::get('/planes', [CurriculumController::class, 'listarPlanes']);
@@ -67,6 +73,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/capitulos/{id}/observaciones', [ChapterController::class, 'storeObservacion']);
     Route::put('/observaciones/{id}/subsanar', [ChapterController::class, 'subsanarObservacion']);
     Route::get('/capitulos/{id}/historial', [ChapterController::class, 'historialAuditoria']);
+    Route::get('/capitulos/{id}/versiones', [ChapterController::class, 'listarVersiones']);
+    Route::post('/capitulos/{id}/versiones', [ChapterController::class, 'storeVersion']);
 
     // Módulo 3: Repositorio Digital y Búsqueda Facetada (CU6, RF-11 a RF-14)
     Route::get('/evidencias', [EvidenceController::class, 'index']);
@@ -76,11 +84,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/evidencias/vincular-capitulo', [EvidenceController::class, 'vincularCapitulo']);
     Route::post('/evidencias/desvincular-capitulo', [EvidenceController::class, 'desvincularCapitulo']);
 
-    // Tablero de Control, Estadísticas, Bitácora y Compilador Oficial (CU7, CU8, RF-09, RF-15, Req. 4, Req. 8)
+    // Tablero de Control, Estadísticas y Compilador Oficial (CU7, CU8, RF-09, RF-15, Req. 8)
     Route::get('/dashboard/metricas', [DashboardController::class, 'metricas']);
     Route::get('/dashboard/planes/{idPlan}/componentes', [DashboardController::class, 'componentesStats']);
     Route::get('/dashboard/productividad', [DashboardController::class, 'productividadUsuarios']);
     Route::get('/dashboard/planes/{idPlan}/reporte-final', [DashboardController::class, 'reporteFinal']);
-    Route::get('/bitacora', [DashboardController::class, 'bitacora']);
-    Route::get('/bitacora/exportar', [DashboardController::class, 'exportarBitacora']);
 });
