@@ -87,7 +87,8 @@ class EvidenceController extends Controller
             'codigo_norma' => $data['codigo_norma'],
             'titulo' => $data['titulo'],
             'tipo_documento' => $data['tipo_documento'],
-            'organo_emisor' => $data['organo_emisor'],
+            // Se conserva el campo para compatibilidad con registros anteriores.
+            'organo_emisor' => $data['organo_emisor'] ?? '',
             'fecha_emision' => $data['fecha_emision'],
             'archivo_ruta' => $rutaArchivo,
             'vigente' => true,

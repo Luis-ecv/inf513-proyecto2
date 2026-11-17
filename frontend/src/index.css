@@ -175,6 +175,35 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* El texto secundario debe conservar contraste suficiente en modo día. */
+[data-mode="light"] .opacity-40 {
+  opacity: 0.65;
+}
+
+[data-mode="light"] .opacity-50 {
+  opacity: 0.72;
+}
+
+[data-mode="light"] .opacity-60 {
+  opacity: 0.8;
+}
+
+[data-mode="light"] .opacity-70,
+[data-mode="light"] .opacity-75 {
+  opacity: 0.88;
+}
+
+[data-mode="light"] input,
+[data-mode="light"] select,
+[data-mode="light"] textarea {
+  color: var(--text-main);
+}
+
+[data-mode="light"] input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.9;
+}
+
 * {
   border-color: var(--border-color);
 }

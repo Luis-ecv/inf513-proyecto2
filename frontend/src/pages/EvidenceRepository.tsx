@@ -8,17 +8,32 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 export const EvidenceRepository: React.FC = () => {
+  const tiposIniciales = [
+    'Resolución ICU',
+    'Resolución Facultativa',
+    'Dictamen Académico',
+    'Acta de Comisión',
+    'Convenio Interinstitucional',
+  ];
   const { user } = useAuth();
   const esInvitado = user?.rol?.toLowerCase() === 'invitado';
   const puedeEliminar = ['director', 'delegado'].includes(user?.rol?.toLowerCase() || '');
   const [documentos, setDocumentos] = useState<DocumentoEvidencia[]>([]);
-  const [facetas, setFacetas] = useState<{ tipos: string[]; emisores: string[] }>({ tipos: [], emisores: [] });
+  const [facetas, setFacetas] = useState<{ tipos: string[] }>({ tipos: [] });
+  const [tiposDocumento, setTiposDocumento] = useState<string[]>(() => {
+    const guardados = localStorage.getItem('tipos_documento_evidencia');
+    return guardados ? JSON.parse(guardados) : tiposIniciales;
+  });
+  const [tiposExcluidos, setTiposExcluidos] = useState<string[]>(() => {
+    const guardados = localStorage.getItem('tipos_documento_evidencia_excluidos');
+    return guardados ? JSON.parse(guardados) : [];
+  });
+  const [nuevoTipoDoc, setNuevoTipoDoc] = useState('');
   const [loading, setLoading] = useState(true);
 
   // Filtros facetados (RF-14)
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTipo, setSelectedTipo] = useState('');
-  const [selectedEmisor, setSelectedEmisor] = useState('');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
 
@@ -27,7 +42,6 @@ export const EvidenceRepository: React.FC = () => {
   const [codigoNorma, setCodigoNorma] = useState('');
   const [titulo, setTitulo] = useState('');
   const [tipoDoc, setTipoDoc] = useState('Resolución ICU');
-  const [organoEmisor, setOrganoEmisor] = useState('Ilustre Consejo Universitario');
   const [fechaEmision, setFechaEmision] = useState('');
   const [archivo, setArchivo] = useState<File | null>(null);
   const [idPadre, setIdPadre] = useState<number | ''>('');
@@ -39,7 +53,6 @@ export const EvidenceRepository: React.FC = () => {
       const params: any = {};
       if (searchQuery.trim()) params.q = searchQuery.trim();
       if (selectedTipo) params.tipo_documento = selectedTipo;
-      if (selectedEmisor) params.organo_emisor = selectedEmisor;
       if (fechaDesde) params.fecha_desde = fechaDesde;
       if (fechaHasta) params.fecha_hasta = fechaHasta;
 
@@ -48,6 +61,7 @@ export const EvidenceRepository: React.FC = () => {
         setDocumentos(res.data.documentos);
         if (res.data.facetas) {
           setFacetas(res.data.facetas);
+          setTiposDocumento((actuales) => Array.from(new Set([...actuales, ...res.data.facetas.tipos])));
         }
       }
     } catch (err) {
@@ -59,7 +73,15 @@ export const EvidenceRepository: React.FC = () => {
 
   useEffect(() => {
     fetchDocumentos();
-  }, [selectedTipo, selectedEmisor, fechaDesde, fechaHasta]);
+  }, [selectedTipo, fechaDesde, fechaHasta]);
+
+  useEffect(() => {
+    localStorage.setItem('tipos_documento_evidencia', JSON.stringify(tiposDocumento));
+  }, [tiposDocumento]);
+
+  useEffect(() => {
+    localStorage.setItem('tipos_documento_evidencia_excluidos', JSON.stringify(tiposExcluidos));
+  }, [tiposExcluidos]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +91,6 @@ export const EvidenceRepository: React.FC = () => {
   const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedTipo('');
-    setSelectedEmisor('');
     setFechaDesde('');
     setFechaHasta('');
     setTimeout(fetchDocumentos, 50);
@@ -88,7 +109,6 @@ export const EvidenceRepository: React.FC = () => {
     formData.append('codigo_norma', codigoNorma.trim());
     formData.append('titulo', titulo.trim());
     formData.append('tipo_documento', tipoDoc);
-    formData.append('organo_emisor', organoEmisor);
     formData.append('fecha_emision', fechaEmision);
     formData.append('archivo', archivo);
     if (idPadre) {
@@ -114,6 +134,25 @@ export const EvidenceRepository: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const tiposDisponibles = Array.from(new Set([...tiposDocumento, ...facetas.tipos]))
+    .filter((tipo) => !tiposExcluidos.includes(tipo));
+
+  const agregarTipoDocumento = () => {
+    const nuevoTipo = nuevoTipoDoc.trim();
+    if (!nuevoTipo || tiposDisponibles.includes(nuevoTipo)) return;
+    setTiposDocumento((actuales) => [...actuales, nuevoTipo]);
+    setTiposExcluidos((actuales) => actuales.filter((tipo) => tipo !== nuevoTipo));
+    setTipoDoc(nuevoTipo);
+    setNuevoTipoDoc('');
+  };
+
+  const eliminarTipoDocumento = (tipo: string) => {
+    if (!window.confirm(`¿Deseas quitar la opción "${tipo}" del selector?`)) return;
+    setTiposExcluidos((actuales) => Array.from(new Set([...actuales, tipo])));
+    if (tipoDoc === tipo) setTipoDoc(tiposDisponibles.find((actual) => actual !== tipo) || '');
+    if (selectedTipo === tipo) setSelectedTipo('');
   };
 
   const handleDescargar = async (doc: DocumentoEvidencia) => {
@@ -189,7 +228,7 @@ export const EvidenceRepository: React.FC = () => {
           <h2 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--primary)' }}>
             <Filter className="w-4 h-4" /> Motor de Búsqueda Facetada Combinada (RF-14)
           </h2>
-          {(searchQuery || selectedTipo || selectedEmisor || fechaDesde || fechaHasta) && (
+          {(searchQuery || selectedTipo || fechaDesde || fechaHasta) && (
             <button
               onClick={handleResetFilters}
               className="text-xs flex items-center gap-1 opacity-70 hover:opacity-100 transition"
@@ -228,22 +267,6 @@ export const EvidenceRepository: React.FC = () => {
               <option value="">Todos los tipos</option>
               {facetas.tipos.map((t) => (
                 <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Órgano Emisor */}
-          <div>
-            <label className="block font-semibold mb-1">Órgano Emisor:</label>
-            <select
-              value={selectedEmisor}
-              onChange={(e) => setSelectedEmisor(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-              style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
-            >
-              <option value="">Todos los emisores</option>
-              {facetas.emisores.map((em) => (
-                <option key={em} value={em}>{em}</option>
               ))}
             </select>
           </div>
@@ -307,9 +330,6 @@ export const EvidenceRepository: React.FC = () => {
                   </h3>
 
                   <div className="mt-2.5 space-y-1 text-[11px] opacity-75">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold">Órgano:</span> {doc.organo_emisor}
-                    </div>
                     <div className="flex items-center gap-1.5">
                       <span className="font-semibold">Tipo:</span> {doc.tipo_documento}
                     </div>
@@ -428,37 +448,50 @@ export const EvidenceRepository: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div>
                 <div>
                   <label className="block font-semibold mb-1">Tipo de Documento:</label>
-                  <select
-                    value={tipoDoc}
-                    onChange={(e) => setTipoDoc(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
-                  >
-                    <option value="Resolución ICU">Resolución ICU</option>
-                    <option value="Resolución Facultativa">Resolución Facultativa</option>
-                    <option value="Dictamen Académico">Dictamen Académico</option>
-                    <option value="Acta de Comisión">Acta de Comisión</option>
-                    <option value="Convenio Interinstitucional">Convenio Interinstitucional</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1">Órgano Emisor:</label>
-                  <select
-                    value={organoEmisor}
-                    onChange={(e) => setOrganoEmisor(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
-                  >
-                    <option value="Ilustre Consejo Universitario">Ilustre Consejo Universitario</option>
-                    <option value="Consejo Facultativo FICCT">Consejo Facultativo FICCT</option>
-                    <option value="Dirección de Carrera">Dirección de Carrera</option>
-                    <option value="Comisión Curricular">Comisión Curricular</option>
-                    <option value="Vicerrectorado">Vicerrectorado</option>
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      value={tipoDoc}
+                      onChange={(e) => setTipoDoc(e.target.value)}
+                      className="flex-1 px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                    >
+                      {tiposDisponibles.map((tipo) => (
+                        <option key={tipo} value={tipo}>{tipo}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => eliminarTipoDocumento(tipoDoc)}
+                      disabled={!tipoDoc}
+                      className="px-2.5 rounded-lg border text-rose-500 hover:bg-rose-500/10 disabled:opacity-40"
+                      style={{ borderColor: 'var(--border-color)' }}
+                      title="Quitar tipo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="text"
+                      value={nuevoTipoDoc}
+                      onChange={(e) => setNuevoTipoDoc(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregarTipoDocumento(); } }}
+                      placeholder="Nuevo tipo de documento"
+                      className="flex-1 px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={agregarTipoDocumento}
+                      className="px-3 py-2 rounded-lg font-semibold text-white bg-emerald-600 hover:bg-emerald-700"
+                      title="Agregar tipo"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 

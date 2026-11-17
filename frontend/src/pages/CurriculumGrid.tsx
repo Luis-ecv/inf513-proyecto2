@@ -271,7 +271,7 @@ export const CurriculumGrid: React.FC = () => {
           <div className="px-3 py-2 rounded-xl border text-center" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
             <div className="text-xs opacity-60">Créditos Acumulados</div>
             <div className="text-lg font-bold text-blue-500">{totalCreditos} / {plan?.limite_creditos_max}</div>
-            <div className="text-[10px] opacity-70">Mínimo: {plan?.limite_creditos_min} cr</div>
+            <div className="text-[10px] opacity-70">Mínimo: {plan?.limite_creditos_min} credito</div>
           </div>
 
           <Link
@@ -339,7 +339,7 @@ export const CurriculumGrid: React.FC = () => {
               <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
                 <span className="font-bold text-xs">Semestre {sem}</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded border opacity-70" style={{ borderColor: 'var(--border-color)' }}>
-                  {creditosSemestre} cr
+                  {creditosSemestre} credito
                 </span>
               </div>
 
@@ -359,7 +359,7 @@ export const CurriculumGrid: React.FC = () => {
                         <span className="font-extrabold text-xs text-blue-500">{asig.sigla}</span>
                         <div className="flex items-center gap-1">
                           <span className="text-[10px] font-semibold px-1 rounded border opacity-70" style={{ borderColor: 'var(--border-color)' }}>
-                            {asig.creditos} cr
+                            {asig.creditos} credito
                           </span>
                           {!esInvitado && <>
                             <button
