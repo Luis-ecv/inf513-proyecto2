@@ -67,6 +67,33 @@ class CurriculumController extends Controller
     }
 
     /**
+     * Actualiza los datos generales de un plan de estudio.
+     */
+    public function updatePlan(Request $request, int $idPlan): JsonResponse
+    {
+        $this->rechazarInvitado($request);
+        $plan = PlanEstudio::findOrFail($idPlan);
+        $validated = $request->validate([
+            'codigo' => ['required', 'string', 'max:30', 'unique:plan_estudio,codigo,' . $plan->id],
+            'carrera' => ['required', 'string', 'max:120'],
+            'anio_vigencia' => ['required', 'integer', 'min:1990'],
+            'descripcion' => ['nullable', 'string'],
+            'objetivos' => ['required', 'string'],
+            'perfil_egreso' => ['required', 'string'],
+            'limite_creditos_min' => ['required', 'integer', 'min:150'],
+            'limite_creditos_max' => ['required', 'integer', 'gte:limite_creditos_min'],
+        ]);
+
+        $plan->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Plan de estudio actualizado exitosamente.',
+            'plan' => $plan->fresh(),
+        ]);
+    }
+
+    /**
      * Lista asignaturas de un plan de estudios agrupadas por semestre (CU2, RF-02).
      */
     public function listarAsignaturas(int $idPlan): JsonResponse

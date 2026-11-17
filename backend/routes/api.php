@@ -51,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Módulo 1: Malla Curricular y Grafo de Prerrequisitos (CU2, CU3, RF-01 a RF-04)
     Route::get('/planes', [CurriculumController::class, 'listarPlanes']);
     Route::post('/planes', [CurriculumController::class, 'storePlan']);
+    Route::put('/planes/{idPlan}', [CurriculumController::class, 'updatePlan']);
     Route::get('/planes/{idPlan}/asignaturas', [CurriculumController::class, 'listarAsignaturas']);
     Route::post('/asignaturas', [CurriculumController::class, 'storeAsignatura']);
     Route::put('/asignaturas/{idAsignatura}', [CurriculumController::class, 'updateAsignatura']);

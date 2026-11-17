@@ -36,6 +36,7 @@ export const CurriculumGrid: React.FC = () => {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [planError, setPlanError] = useState('');
   const [savingPlan, setSavingPlan] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState<number | null>(null);
   const [planCodigo, setPlanCodigo] = useState('');
   const [planCarrera, setPlanCarrera] = useState('');
   const [planAnio, setPlanAnio] = useState(new Date().getFullYear());
@@ -83,7 +84,7 @@ export const CurriculumGrid: React.FC = () => {
     }
   }, [selectedPlanId]);
 
-  const handleCrearPlan = async (e: React.FormEvent) => {
+  const handleGuardarPlan = async (e: React.FormEvent) => {
     e.preventDefault();
     setPlanError('');
 
@@ -94,7 +95,7 @@ export const CurriculumGrid: React.FC = () => {
 
     setSavingPlan(true);
     try {
-      const res = await api.post('/planes', {
+      const datosPlan = {
         codigo: planCodigo.trim().toUpperCase(),
         carrera: planCarrera.trim(),
         anio_vigencia: planAnio,
@@ -103,11 +104,15 @@ export const CurriculumGrid: React.FC = () => {
         perfil_egreso: planPerfil.trim(),
         limite_creditos_min: planCreditosMin,
         limite_creditos_max: planCreditosMax,
-      });
+      };
+      const res = editingPlanId
+        ? await api.put(`/planes/${editingPlanId}`, datosPlan)
+        : await api.post('/planes', datosPlan);
 
       if (res.data.success) {
         const nuevoPlan: PlanEstudio = res.data.plan;
         setShowPlanModal(false);
+        setEditingPlanId(null);
         setSelectedPlanId(nuevoPlan.id);
         setActivePlanId(nuevoPlan.id);
         setPlanCodigo('');
@@ -122,6 +127,21 @@ export const CurriculumGrid: React.FC = () => {
     } finally {
       setSavingPlan(false);
     }
+  };
+
+  const abrirEdicionPlan = () => {
+    if (!plan) return;
+    setEditingPlanId(plan.id);
+    setPlanCodigo(plan.codigo);
+    setPlanCarrera(plan.carrera);
+    setPlanAnio(plan.anio_vigencia);
+    setPlanDescripcion(plan.descripcion || '');
+    setPlanObjetivos(plan.objetivos);
+    setPlanPerfil(plan.perfil_egreso);
+    setPlanCreditosMin(plan.limite_creditos_min);
+    setPlanCreditosMax(plan.limite_creditos_max);
+    setPlanError('');
+    setShowPlanModal(true);
   };
 
   const handleCrearAsignatura = async (e: React.FormEvent) => {
@@ -260,13 +280,37 @@ export const CurriculumGrid: React.FC = () => {
           </div>
 
           {!esInvitado && <button
-            onClick={() => setShowPlanModal(true)}
+            onClick={() => {
+              setEditingPlanId(null);
+              setPlanCodigo('');
+              setPlanCarrera('');
+              setPlanAnio(new Date().getFullYear());
+              setPlanDescripcion('');
+              setPlanObjetivos('');
+              setPlanPerfil('');
+              setPlanCreditosMin(200);
+              setPlanCreditosMax(280);
+              setPlanError('');
+              setShowPlanModal(true);
+            }}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold hover:opacity-80 transition"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
           >
             <Plus className="w-4 h-4 text-emerald-500" />
             <span>Nuevo Plan de Estudio</span>
           </button>}
+
+          {!esInvitado && plan && (
+            <button
+              type="button"
+              onClick={abrirEdicionPlan}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold hover:opacity-80 transition"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+            >
+              <Pencil className="w-4 h-4 text-blue-500" />
+              <span>Editar Plan</span>
+            </button>
+          )}
 
           <div className="px-3 py-2 rounded-xl border text-center" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
             <div className="text-xs opacity-60">Créditos Acumulados</div>
@@ -422,9 +466,11 @@ export const CurriculumGrid: React.FC = () => {
             </button>
 
             <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <BookOpen className="w-4 h-4 text-emerald-500" /> Registrar nuevo plan de estudio
+              <BookOpen className="w-4 h-4 text-emerald-500" /> {editingPlanId ? 'Editar plan de estudio' : 'Registrar nuevo plan de estudio'}
             </h2>
-            <p className="text-xs opacity-60 mb-4">El plan se creará en estado “En Elaboración” y podrá completarse con sus asignaturas.</p>
+            <p className="text-xs opacity-60 mb-4">
+              {editingPlanId ? 'Actualiza los datos generales del plan seleccionado.' : 'El plan se creará en estado “En Elaboración” y podrá completarse con sus asignaturas.'}
+            </p>
 
             {planError && (
               <div className="mb-4 p-3 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center gap-2">
@@ -433,7 +479,7 @@ export const CurriculumGrid: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleCrearPlan} className="space-y-3.5 text-xs">
+            <form onSubmit={handleGuardarPlan} className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold mb-1">Código:</label>
@@ -479,7 +525,7 @@ export const CurriculumGrid: React.FC = () => {
               <div className="pt-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border-color)' }}>
                 <button type="button" onClick={() => setShowPlanModal(false)} className="px-4 py-2 border rounded-lg hover:opacity-80 transition" style={{ borderColor: 'var(--border-color)' }}>Cancelar</button>
                 <button type="submit" disabled={savingPlan} className="px-4 py-2 rounded-lg font-bold shadow-sm transition disabled:opacity-50" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}>
-                  {savingPlan ? 'Guardando...' : 'Guardar Plan'}
+                  {savingPlan ? 'Guardando...' : editingPlanId ? 'Actualizar Plan' : 'Guardar Plan'}
                 </button>
               </div>
             </form>
