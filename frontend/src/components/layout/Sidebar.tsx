@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   LayoutDashboard, BookOpen, GitFork, FileText, Layers, 
   MessageSquare, Archive, Printer, BarChart3, ShieldCheck, 
-  Users, HelpCircle, GraduationCap
+  Users, HelpCircle, GraduationCap, CalendarCheck
 } from 'lucide-react';
 import type { MenuItem } from '../../types';
 
@@ -20,6 +20,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   BarChart3,
   ShieldCheck,
   Users,
+  CalendarCheck,
 };
 
 export const Sidebar: React.FC = () => {

@@ -37,7 +37,7 @@ La solución reemplaza y moderniza el prototipo académico previo implementado e
 | :-: | :--- | :--- |
 | **1** | **Arquitectura de 3 capas con Base de Datos** | Capa de datos en PostgreSQL 16 relacional; capa lógica de negocio en Laravel 13; capa de presentación en React 19 + TypeScript. |
 | **2** | **Al menos 2 roles del negocio (sin admin) y menú dinámico** | Tres roles académicos reales: **Director** (1), **Delegado** (2) e **Invitado** (3). El menú se carga dinámicamente desde la base de datos vía `/api/auth/menu` según el rol autenticado. |
-| **3** | **API RESTful (Laravel - React)** | 36 endpoints RESTful documentados con códigos HTTP semánticos (200, 201, 401, 403, 422). Comunicación vía Axios con tokens Bearer Sanctum. |
+| **3** | **API RESTful (Laravel - React)** | 42 endpoints RESTful documentados con códigos HTTP semánticos (200, 201, 401, 403, 422). Comunicación vía Axios con tokens Bearer Sanctum. |
 | **4** | **Control de Acceso (Matriz) y Bitácora** | Middleware `AuditLogMiddleware` que registra automáticamente inicios de sesión (exitosos y fallidos), recursos accedidos, IP, User-Agent y timestamp. |
 | **5** | **Estilos propios: 3 temas, Día/Noche y Accesibilidad** | 3 temas seleccionables (**Adultos**, **Jóvenes**, **Niños**); modo **Día/Noche** automático según hora local del cliente; escalado de fuente (**Normal, Grande, Extra Grande**) y conmutador de **Alto Contraste**. |
 | **6** | **Validación de entradas con mensajes en español** | Validación tanto en Frontend como en FormRequests de Backend con mensajes claros en español. Se respeta la política estricta de contraseñas de la UAGRM (`8-25 caracteres`, patrón `^[a-zA-Z0-9ñÑ]+$`, sin símbolos). |
@@ -196,7 +196,7 @@ La base de datos viene sembrada con cuentas de usuario correspondientes a los ro
 
 ---
 
-## 7. Catálogo Completo de Endpoints RESTful (38 Rutas)
+## 7. Catálogo Completo de Endpoints RESTful (42 Rutas)
 
 ### 7.1. Autenticación, Sesión y Menú Dinámico
 | Método | Endpoint | Descripción | Acceso |
@@ -266,6 +266,13 @@ La base de datos viene sembrada con cuentas de usuario correspondientes a los ro
 | `GET` | `/api/usuarios` | Listado de usuarios con foto y rol | Director |
 | `POST` | `/api/usuarios` | Registro de nuevo usuario con foto y validación de contraseña | Director |
 | `POST` | `/api/usuarios/{id}/reset-password` | Restablecimiento administrativo de clave temporal (activa cambio obligatorio) | Director |
+
+### 7.8. Convocatorias Oficiales a Reuniones de Comisión
+| Método | Endpoint | Descripción | Acceso |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/convocatorias` | Listado cronológico de convocatorias emitidas con destinatarios | Director |
+| `POST` | `/api/convocatorias` | Emite convocatoria formal, compila carta PDF, genera .ics, despacha vía SMTP y audita | Director |
+| `GET` | `/api/convocatorias/{id}/pdf` | Descarga o visualización directa de la carta oficial en formato PDF | Autenticado |
 
 ---
 

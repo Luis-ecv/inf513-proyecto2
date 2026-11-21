@@ -16,6 +16,7 @@ import { FinalReportCompiler } from './pages/FinalReportCompiler';
 import { BusinessStats } from './pages/BusinessStats';
 import { AccessAuditBitacora } from './pages/AccessAuditBitacora';
 import { UserManagement } from './pages/UserManagement';
+import { Convocatorias } from './pages/Convocatorias';
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 import { ForceChangePasswordModal } from './components/auth/ForceChangePasswordModal';
 
@@ -76,6 +77,14 @@ export const AppContent: React.FC = () => {
           element={
             <RoleProtectedRoute allowedRoles={['Director']}>
               <UserManagement />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="convocatorias"
+          element={
+            <RoleProtectedRoute allowedRoles={['Director']}>
+              <Convocatorias />
             </RoleProtectedRoute>
           }
         />

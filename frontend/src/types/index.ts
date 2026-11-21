@@ -229,5 +229,42 @@ export interface ReporteFinalPayload {
   fechaCompilacion: string;
 }
 
+export interface TemaAgenda {
+  punto: string;
+  enlace?: string | null;
+}
+
+export interface ConvocatoriaDestinatario {
+  id: number;
+  id_convocatoria: number;
+  id_usuario: number;
+  email_destinatario: string;
+  estado_envio: 'pendiente' | 'enviado' | 'fallido' | 'contingencia_local';
+  fecha_envio?: string | null;
+  usuario?: UsuarioBackend;
+}
+
+export interface ConvocatoriaReunion {
+  id: number;
+  codigo_convocatoria: string;
+  titulo: string;
+  fecha_reunion: string;
+  hora_reunion: string;
+  lugar: string;
+  modalidad: 'presencial' | 'virtual' | 'hibrida';
+  enlace_virtual?: string | null;
+  orden_del_dia: Array<TemaAgenda | string>;
+  enlaces_documentos?: Array<{ titulo: string; url: string }>;
+  ruta_pdf?: string | null;
+  total_convocados: number;
+  total_excluidos: number;
+  id_usuario_convocador: number;
+  convocador?: UsuarioBackend;
+  destinatarios?: ConvocatoriaDestinatario[];
+  created_at: string;
+  updated_at: string;
+}
+
+
 
 

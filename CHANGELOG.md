@@ -232,4 +232,43 @@ sequenceDiagram
 - `GET /api/capitulos/{id}/versiones`: Retorna lista ordenada de versiones con sus autores y textos.
 - `POST /api/capitulos/{id}/versiones`: Recibe `archivo`, `contenido_texto` y `resumen_cambio` para crear una nueva versión y actualizar el contenido oficial del capítulo.
 
+---
+
+## 7. Módulo de Convocatorias Oficiales, Generación de Cartas PDF, Despacho SMTP y Calendario Universal (21 de noviembre de 2026)
+
+Se diseñó e implementó la funcionalidad completa que permite al usuario con rol **Director** convocar formalmente a los miembros de la comisión curricular a reuniones de trabajo para socializar avances, mallas y correcciones:
+
+1. **Generación Dinámica de Cartas Oficiales en PDF (DomPDF):**
+   - Plantilla formal institucional (`convocatoria.blade.php`) con membrete de la UAGRM y la FICCT.
+   - Código correlativo anual autogenerado con formato `CONV-DIR-YYYY-XXX` (ej. `CONV-DIR-2026-001`).
+   - Coordenadas de la sesión: Fecha, hora, lugar físico, modalidad (Presencial, Virtual, Híbrida) y enlace de videoconferencia.
+   - Firma formal de la Dirección de Carrera / Presidencia del Comité.
+
+2. **Constructor Dinámico de Orden del Día y Enlaces Directos:**
+   - Selección rápida de capítulos activos del plan de estudios con generación de enlaces directos `/capitulos/{id}`.
+   - Atajos para temas comunes (`Malla Curricular`, `Grafo de Prerrequisitos`, `Observaciones Comité`, `Evidencias`).
+   - Entrada manual libre para temas personalizados con URLs complementarias.
+
+3. **Solución Híbrida de Selección y Modal de Exclusión:**
+   - Selección automática por defecto de **todos los miembros activos** de la comisión docente.
+   - Si el Director desmarca a algún docente, se activa una advertencia visual. Al presionar "Emitir Convocatoria", un **modal bloqueante** lista a los docentes excluidos y solicita confirmación explícita.
+   - Registro de exclusiones en la bitácora inmutable (`convocatoria_reunion_enviada`) indicando la cantidad de excluidos y convocados.
+
+4. **Despacho Resiliente SMTP y Calendario Universal (.ics / Google Calendar):**
+   - Configuración oficial SMTP con el servidor `tecnoweb.org.bo` (remitente `grupo02sa@tecnoweb.org.bo`).
+   - Envío de correo HTML responsive adjuntando la carta PDF y el archivo de invitación estándar `convocatoria.ics` (RFC 5545).
+   - Botón directo en el cuerpo del correo para añadir el evento con un clic a Google Calendar.
+   - Manejo de contingencia local: si el puerto 25 está restringido en el entorno del evaluador, se guarda el estado `contingencia_local` sin bloquear ni arrojar error 500 al usuario.
+
+5. **Navegación e Historial en la SPA:**
+   - Ítem de menú dinámico en base de datos (`/convocatorias`) y Sidebar protegido con `CalendarCheck`.
+   - Botón de acceso rápido en el `Dashboard.tsx` para el rol Director.
+   - Pestaña de Historial con descarga directa del PDF, sincronización y visualización de estados por docente.
+
+### Endpoints RESTful Incorporados:
+- `GET /api/convocatorias`: Listado paginado de convocatorias con sus destinatarios y convocante (rol Director).
+- `POST /api/convocatorias`: Emisión de convocatoria, generación de PDF, despacho SMTP, calendario y auditoría (rol Director).
+- `GET /api/convocatorias/{id}/pdf`: Descarga binaria o visualización en navegador de la carta PDF oficial (autenticado).
+
+
 

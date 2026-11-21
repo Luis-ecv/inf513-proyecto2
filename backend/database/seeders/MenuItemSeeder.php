@@ -19,11 +19,19 @@ class MenuItemSeeder extends Seeder
                 'roles' => [1, 2, 3],
             ],
             [
+                'id' => 12,
+                'titulo' => 'Convocatorias y Reuniones',
+                'ruta' => '/convocatorias',
+                'icono' => 'CalendarCheck',
+                'orden' => 2,
+                'roles' => [1],
+            ],
+            [
                 'id' => 2,
                 'titulo' => 'Malla Curricular',
                 'ruta' => '/malla',
                 'icono' => 'BookOpen',
-                'orden' => 2,
+                'orden' => 3,
                 'roles' => [1, 2, 3],
             ],
             [
@@ -31,7 +39,7 @@ class MenuItemSeeder extends Seeder
                 'titulo' => 'Grafo de Prerrequisitos',
                 'ruta' => '/grafo',
                 'icono' => 'GitFork',
-                'orden' => 3,
+                'orden' => 4,
                 'roles' => [1, 2, 3],
             ],
             [
@@ -39,7 +47,7 @@ class MenuItemSeeder extends Seeder
                 'titulo' => 'Avance del Rediseño',
                 'ruta' => '/redisenio',
                 'icono' => 'FileText',
-                'orden' => 4,
+                'orden' => 5,
                 'roles' => [1, 2, 3],
             ],
             [
@@ -47,7 +55,7 @@ class MenuItemSeeder extends Seeder
                 'titulo' => 'Capítulos y Redacción',
                 'ruta' => '/capitulos',
                 'icono' => 'Layers',
-                'orden' => 5,
+                'orden' => 6,
                 'roles' => [1, 2],
             ],
             [
@@ -55,7 +63,7 @@ class MenuItemSeeder extends Seeder
                 'titulo' => 'Observaciones Técnicas',
                 'ruta' => '/observaciones',
                 'icono' => 'MessageSquare',
-                'orden' => 6,
+                'orden' => 7,
                 'roles' => [1, 2],
             ],
             [
@@ -63,7 +71,7 @@ class MenuItemSeeder extends Seeder
                 'titulo' => 'Repositorio de Evidencias',
                 'ruta' => '/evidencias',
                 'icono' => 'Archive',
-                'orden' => 7,
+                'orden' => 8,
                 'roles' => [1, 2, 3],
             ],
             [
@@ -71,7 +79,7 @@ class MenuItemSeeder extends Seeder
                 'titulo' => 'Reporte Oficial y PDF',
                 'ruta' => '/reporte-final',
                 'icono' => 'Printer',
-                'orden' => 8,
+                'orden' => 9,
                 'roles' => [1, 2],
             ],
             [
@@ -79,7 +87,7 @@ class MenuItemSeeder extends Seeder
                 'titulo' => 'Estadísticas del Negocio',
                 'ruta' => '/estadisticas',
                 'icono' => 'BarChart3',
-                'orden' => 9,
+                'orden' => 10,
                 'roles' => [1, 2],
             ],
             [
@@ -87,7 +95,7 @@ class MenuItemSeeder extends Seeder
                 'titulo' => 'Bitácora y Accesos',
                 'ruta' => '/bitacora',
                 'icono' => 'ShieldCheck',
-                'orden' => 10,
+                'orden' => 11,
                 'roles' => [1],
             ],
             [
@@ -95,7 +103,7 @@ class MenuItemSeeder extends Seeder
                 'titulo' => 'Gestión de Usuarios',
                 'ruta' => '/usuarios',
                 'icono' => 'Users',
-                'orden' => 11,
+                'orden' => 12,
                 'roles' => [1],
             ],
         ];

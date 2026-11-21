@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChapterController;
+use App\Http\Controllers\Api\ConvocatoriaController;
 use App\Http\Controllers\Api\CurriculumController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EvidenceController;
@@ -46,7 +47,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/usuarios/{id}/reset-password', [AuthController::class, 'resetPasswordUsuario']);
         Route::get('/bitacora', [DashboardController::class, 'bitacora']);
         Route::get('/bitacora/exportar', [DashboardController::class, 'exportarBitacora']);
+        Route::get('/convocatorias', [ConvocatoriaController::class, 'listarConvocatorias']);
+        Route::post('/convocatorias', [ConvocatoriaController::class, 'storeConvocatoria']);
+        Route::post('/convocatorias/previsualizar', [ConvocatoriaController::class, 'previsualizarPdf']);
     });
+
+    Route::get('/convocatorias/{id}/pdf', [ConvocatoriaController::class, 'descargarPdf']);
 
     // Módulo 1: Malla Curricular y Grafo de Prerrequisitos (CU2, CU3, RF-01 a RF-04)
     Route::get('/planes', [CurriculumController::class, 'listarPlanes']);

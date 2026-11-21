@@ -3,7 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { 
   CheckCircle2, AlertTriangle, Clock, FileEdit, 
-  GitFork, Archive, ArrowUpRight, BarChart3 
+  GitFork, Archive, ArrowUpRight, BarChart3, CalendarCheck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getActivePlanId } from '../services/activePlan';
@@ -53,7 +53,7 @@ export const Dashboard: React.FC = () => {
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}>
         <div>
           <h1 className="text-xl font-bold tracking-tight">
-            Hola, {user?.nombreCompleto} 👋
+            Hola, {user?.nombreCompleto} 
           </h1>
           <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
             Supervisión del Rediseño Curricular • <span className="font-semibold">{plan?.carrera} ({plan?.codigo})</span>
@@ -64,6 +64,16 @@ export const Dashboard: React.FC = () => {
           <div className="px-3 py-1.5 rounded-lg border text-xs" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}>
             <span className="opacity-60">Estado del Plan:</span> <span className="font-bold text-amber-500">{plan?.estado}</span>
           </div>
+          {user?.rol === 'Director' && (
+            <Link
+              to="/convocatorias"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border shadow-sm transition hover:bg-amber-500/10"
+              style={{ borderColor: 'var(--border-color)' }}
+            >
+              <CalendarCheck className="w-3.5 h-3.5 text-amber-500" />
+              Convocatorias
+            </Link>
+          )}
           <Link
             to="/malla"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition"

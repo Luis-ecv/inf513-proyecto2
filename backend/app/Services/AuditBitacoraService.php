@@ -16,6 +16,7 @@ class AuditBitacoraService
     public const EVENTO_RESETEO_PASSWORD_ADMIN = 'reseteo_password_administrativo';
     public const EVENTO_CAMBIO_PASSWORD_OBLIGATORIO = 'cambio_password_primer_ingreso';
     public const EVENTO_ENTREGA_VERSION = 'entrega_version_capitulo';
+    public const EVENTO_CONVOCATORIA_REUNION = 'convocatoria_reunion_enviada';
 
     /**
      * Registra un inicio de sesión exitoso.
@@ -124,6 +125,30 @@ class AuditBitacoraService
     }
 
     /**
+     * Registra el envío formal de una convocatoria a reunión.
+     */
+    public function registrarConvocatoriaReunion(User $usuario, string $codigoConvocatoria, string $titulo, int $totalConvocados, int $totalExcluidos, ?Request $request = null): BitacoraAcceso
+    {
+        $ip = $request?->ip() ?? request()?->ip() ?? '127.0.0.1';
+        $userAgent = $request?->userAgent() ?? request()?->userAgent() ?? 'System/Internal';
+
+        $detalleExclusion = $totalExcluidos > 0
+            ? " (Atención: {$totalExcluidos} docente(s) de la comisión fueron excluidos)"
+            : " (Convocatoria plena: 100% de la comisión convocada)";
+
+        return BitacoraAcceso::create([
+            'id_usuario' => $usuario->id,
+            'ip_address' => $ip,
+            'user_agent' => substr((string) $userAgent, 0, 500),
+            'tipo_evento' => self::EVENTO_CONVOCATORIA_REUNION,
+            'recurso_accedido' => '/api/convocatorias',
+            'metodo_http' => 'POST',
+            'detalle' => "CONVOCATORIA: El Director '{$usuario->username}' emitió la Convocatoria '{$codigoConvocatoria}' ({$titulo}) a {$totalConvocados} docente(s){$detalleExclusion}.",
+            'fecha_hora' => now(),
+        ]);
+    }
+
+    /**
      * Registra el acceso a un recurso de la API.
      */
     public function registrarAccesoRecurso(?User $usuario, Request $request): void
@@ -149,6 +174,35 @@ class AuditBitacoraService
             ->orderBy('fecha_hora', 'desc')
             ->limit($limite)
             ->get();
+    }
+
+    /**
+     * Retorna los recursos de la API con mayor índice de acceso (Requisito 4).
+     */
+    public function obtenerRecursosMasAccedidos(int $limite = 10)
+    {
+        return BitacoraAcceso::select('recurso_accedido', DB::raw('count(*) as total_accesos'))
+            ->whereNotNull('recurso_accedido')
+            ->groupBy('recurso_accedido')
+            ->orderByDesc('total_accesos')
+            ->limit($limite)
+            ->get();
+    }
+
+    /**
+     * Retorna estadísticas consolidadas de inicios de sesión exitosos vs fallidos (Requisito 4 y 8).
+     */
+    public function obtenerEstadisticasLogins(): array
+    {
+        $exitosos = BitacoraAcceso::where('tipo_evento', self::EVENTO_LOGIN_EXITOSO)->count();
+        $fallidos = BitacoraAcceso::where('tipo_evento', self::EVENTO_LOGIN_FALLIDO)->count();
+        $total = $exitosos + $fallidos;
+
+        return [
+            'totalExitosos' => $exitosos,
+            'totalFallidos' => $fallidos,
+            'tasaEfectividad' => $total > 0 ? round(($exitosos / $total) * 100, 2) : 100,
+        ];
     }
 
     /**
