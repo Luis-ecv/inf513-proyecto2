@@ -2,18 +2,24 @@ import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import type { Capitulo, Componente } from '../types';
 import { 
-  Layers, Plus, ArrowRight, UserCheck, CheckCircle2, 
-  Clock, AlertTriangle, FileEdit, X, AlertCircle, Trash2
+  Layers, Plus, ArrowRight, X, AlertCircle, Trash2,
+  BookOpen, ChevronDown
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getActivePlanId } from '../services/activePlan';
 import { useAuth } from '../context/AuthContext';
+import { EmptyState } from '../components/common/EmptyState';
 
 export const RedesignOverview: React.FC = () => {
   const { user } = useAuth();
   const esInvitado = user?.rol?.toLowerCase() === 'invitado';
   const [componentes, setComponentes] = useState<Componente[]>([]);
   const [loading, setLoading] = useState(true);
+  const [collapsedComps, setCollapsedComps] = useState<Record<number, boolean>>({});
+
+  const toggleCollapse = (id: number) => {
+    setCollapsedComps(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Modal para nuevo capítulo (RF-05)
   const [showChapterModal, setShowChapterModal] = useState(false);
@@ -146,26 +152,26 @@ export const RedesignOverview: React.FC = () => {
     switch (estadoNombre) {
       case 'Aprobado':
         return (
-          <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <CheckCircle2 className="w-3 h-3" /> Aprobado
+          <span className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Aprobado
           </span>
         );
       case 'En Revisión':
         return (
-          <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-            <Clock className="w-3 h-3" /> En Revisión
+          <span className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-500" /> En Revisión
           </span>
         );
       case 'Observado':
         return (
-          <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            <AlertTriangle className="w-3 h-3" /> Observado
+          <span className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Observado
           </span>
         );
       default:
         return (
-          <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-            <FileEdit className="w-3 h-3" /> Borrador
+          <span className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Borrador
           </span>
         );
     }
@@ -174,285 +180,224 @@ export const RedesignOverview: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-sm opacity-60">Cargando avance del rediseño...</div>
+        <div className="text-xs font-semibold text-slate-400 animate-pulse flex items-center gap-2">
+          <Layers className="w-4 h-4 animate-spin text-sistemas-cyan" />
+          Cargando estructura y componentes del rediseño...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Cabecera del Módulo 2 (CU4, RF-05) */}
+    <div className="space-y-4">
+      {/* 1. Cabecera del Módulo */}
       <div 
-        className="p-6 rounded-2xl border shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        className="p-5 rounded-xl border shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
       >
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-purple-500/10 text-purple-500 border border-purple-500/20">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
               Módulo 2 • Rediseño Curricular
             </span>
+            <span className="text-xs text-slate-400 font-medium">Estructura Modular</span>
           </div>
-          <h1 className="text-xl font-extrabold tracking-tight mt-1">
+          <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
             Estructura de Componentes y Capítulos Correlativos
           </h1>
-          <p className="text-xs opacity-60 mt-0.5">
-            Distribución de responsabilidades, seguimiento por máquina de estados y auditoría inmutable.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Distribución jerárquica de componentes curriculares, seguimiento por máquina de estados y control de redacción.
           </p>
         </div>
 
-        {!esInvitado && <button
-          onClick={() => {
-            setCompNumero(componentes.length + 1);
-            setShowCompModal(true);
-          }}
-          className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition self-start sm:self-auto"
-          style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
-        >
-          <Plus className="w-4 h-4" /> Nuevo Componente
-        </button>}
-      </div>
-
-      {/* Componentes y Capítulos */}
-      <div className="space-y-6">
-        {componentes.map((comp) => {
-          const capitulos = comp.capitulos || [];
-          const aprobados = capitulos.filter(c => c.estado?.nombre === 'Aprobado').length;
-          const pct = capitulos.length > 0 ? Math.round((aprobados / capitulos.length) * 100) : 0;
-
-          return (
-            <div 
-              key={comp.id}
-              className="p-6 rounded-2xl border shadow-sm space-y-4 transition"
-              style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b gap-3" style={{ borderColor: 'var(--border-color)' }}>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-extrabold px-2 py-0.5 rounded border" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}>
-                      Componente #{comp.numero}
-                    </span>
-                    <h2 className="text-base font-bold">{comp.nombre}</h2>
-                  </div>
-                  {comp.descripcion && (
-                    <p className="text-xs opacity-60 mt-1 max-w-2xl">{comp.descripcion}</p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="text-right text-xs">
-                    <span className="opacity-60">Cumplimiento:</span> <span className="font-bold">{pct}%</span>
-                    <div className="text-[10px] opacity-50">{aprobados} de {capitulos.length} aprobados</div>
-                  </div>
-
-                  {!esInvitado && <button
-                    onClick={() => {
-                      setSelectedCompId(comp.id);
-                      setChapNumero(capitulos.length + 1);
-                      setShowChapterModal(true);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium hover:opacity-80 transition"
-                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Agregar Capítulo
-                  </button>}
-                  {!esInvitado && <button
-                    onClick={() => eliminarComponente(comp)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition"
-                    style={{ borderColor: 'var(--border-color)' }}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
-                  </button>}
-                </div>
-              </div>
-
-              {/* Lista de Capítulos del Componente */}
-              {capitulos.length === 0 ? (
-                <div className="text-center py-6 text-xs opacity-50 border border-dashed rounded-xl" style={{ borderColor: 'var(--border-color)' }}>
-                  Aún no se han redactado capítulos dentro de este componente temático.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {capitulos.map((cap) => (
-                    <div
-                      key={cap.id}
-                      className="p-4 rounded-xl border shadow-xs flex flex-col justify-between space-y-3 transition hover:shadow-md"
-                      style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="text-xs font-bold opacity-60">Capítulo #{cap.numero}</span>
-                          {getStatusBadge(cap.estado?.nombre)}
-                        </div>
-
-                        <h3 className="font-bold text-sm leading-snug line-clamp-2">
-                          {cap.titulo}
-                        </h3>
-
-                        {/* Redactores Asignados */}
-                        <div className="flex items-center gap-1.5 mt-2.5 text-[11px] opacity-70">
-                          <UserCheck className="w-3.5 h-3.5 shrink-0 text-blue-500" />
-                          <span className="truncate">
-                            {cap.redactores && cap.redactores.length > 0
-                              ? cap.redactores.map(r => r.nombreCompleto).join(', ')
-                              : 'Sin redactor asignado'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t flex justify-between items-center" style={{ borderColor: 'var(--border-color)' }}>
-                        {!esInvitado && (
-                          <button
-                            type="button"
-                            onClick={() => eliminarCapitulo(cap)}
-                            className="flex items-center gap-1 text-xs font-semibold text-rose-500 hover:underline"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> Eliminar
-                          </button>
-                        )}
-                        <Link
-                          to={`/capitulos/${cap.id}`}
-                          className="flex items-center gap-1 text-xs font-semibold hover:underline"
-                          style={{ color: 'var(--primary)' }}
-                        >
-                          Gestionar Capítulo <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Modal para Crear Capítulo (RF-05) */}
-      {showChapterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div 
-            className="w-full max-w-lg p-6 rounded-2xl border shadow-2xl relative"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
+        {!esInvitado && (
+          <button
+            onClick={() => {
+              setCompNumero(componentes.length + 1);
+              setShowCompModal(true);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold shadow-xs transition bg-sky-500 hover:bg-sky-600 text-white self-start sm:self-auto shrink-0"
           >
-            <button 
-              onClick={() => setShowChapterModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:opacity-80 transition"
-              style={{ borderColor: 'var(--border-color)' }}
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nuevo Componente</span>
+          </button>
+        )}
+      </div>
 
-            <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <Layers className="w-4 h-4 text-purple-500" /> Registrar Capítulo Correlativo
-            </h2>
-            <p className="text-xs opacity-60 mb-4">
-              El capítulo se iniciará en estado 'Borrador' para su posterior asignación y revisión.
-            </p>
+      {/* 2. Listado de Componentes y sus Capítulos */}
+      <div className="space-y-4">
+        {componentes.length === 0 ? (
+          <EmptyState
+            illustration="general"
+            title="Sin componentes registrados"
+            description="El marco de rediseño curricular no tiene componentes configurados todavía. Comienza creando el primero."
+            actionLabel={!esInvitado ? 'Crear Primer Componente' : undefined}
+            onAction={
+              !esInvitado
+                ? () => {
+                    setCompNumero(1);
+                    setShowCompModal(true);
+                  }
+                : undefined
+            }
+          />
+        ) : (
+          componentes.map((comp) => {
+            const capitulos = comp.capitulos || [];
+            const aprobados = capitulos.filter(c => c.estado?.nombre === 'Aprobado').length;
+            const pct = capitulos.length > 0 ? Math.round((aprobados / capitulos.length) * 100) : 0;
+            const isCollapsed = Boolean(collapsedComps[comp.id]);
 
-            {chapError && (
-              <div className="mb-4 p-3 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{chapError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleCrearCapitulo} className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-semibold mb-1">Número Correlativo:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={chapNumero}
-                    onChange={(e) => setChapNumero(Number(e.target.value))}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
-                    required
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block font-semibold mb-1">Componente Temático:</label>
-                  <select
-                    value={selectedCompId || ''}
-                    onChange={(e) => setSelectedCompId(Number(e.target.value))}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
-                    required
-                  >
-                    {componentes.map(c => (
-                      <option key={c.id} value={c.id}>Comp. #{c.numero}: {c.nombre}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold mb-1">Título del Capítulo:</label>
-                <input
-                  type="text"
-                  value={chapTitulo}
-                  onChange={(e) => setChapTitulo(e.target.value)}
-                  placeholder="ej: Modelo Pedagógico y Metodología de Enseñanza"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold mb-1">Contenido Preliminar (Borrador):</label>
-                <textarea
-                  rows={4}
-                  value={chapContenido}
-                  onChange={(e) => setChapContenido(e.target.value)}
-                  placeholder="Redacta o pega el contenido base del capítulo..."
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
-                />
-              </div>
-
-              <div className="pt-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border-color)' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowChapterModal(false)}
-                  className="px-4 py-2 border rounded-lg hover:opacity-80 transition"
+            return (
+              <div 
+                key={comp.id}
+                className="p-5 rounded-xl border shadow-xs space-y-3.5 transition"
+                style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
+              >
+                <div 
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b gap-3" 
                   style={{ borderColor: 'var(--border-color)' }}
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingChap}
-                  className="px-4 py-2 rounded-lg font-bold shadow-sm transition disabled:opacity-50"
-                  style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
-                >
-                  {savingChap ? 'Guardando...' : 'Guardar Capítulo'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  <div className="flex items-start gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleCollapse(comp.id)}
+                      className="mt-0.5 p-1 rounded-md border text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                      style={{ borderColor: 'var(--border-color)' }}
+                      title={isCollapsed ? 'Expandir capítulos' : 'Plegar capítulos'}
+                    >
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`} />
+                    </button>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span 
+                          className="text-xs font-mono font-bold px-2 py-0.5 rounded border text-sistemas-cyan" 
+                          style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+                        >
+                          Componente #{comp.numero}
+                        </span>
+                        <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">{comp.nombre}</h2>
+                      </div>
+                      {comp.descripcion && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl font-medium">{comp.descripcion}</p>
+                      )}
+                    </div>
+                  </div>
 
-      {/* Modal para Crear Componente */}
+                  <div className="flex items-center gap-3">
+                    <div className="text-right text-xs">
+                      <span className="text-slate-400">Avance:</span> <span className="font-bold text-sistemas-cyan">{pct}%</span>
+                      <div className="text-[10px] text-slate-400">{aprobados} de {capitulos.length} aprobados</div>
+                    </div>
+
+                    {!esInvitado && (
+                      <button
+                        onClick={() => {
+                          setSelectedCompId(comp.id);
+                          setChapNumero(capitulos.length + 1);
+                          setShowChapterModal(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300"
+                        style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}
+                      >
+                        <Plus className="w-3.5 h-3.5 text-sky-500" />
+                        <span>Añadir Capítulo</span>
+                      </button>
+                    )}
+
+                    {!esInvitado && (
+                      <button
+                        onClick={() => eliminarComponente(comp)}
+                        className="p-1.5 rounded-lg border hover:bg-rose-500/10 transition text-slate-400 hover:text-rose-500"
+                        style={{ borderColor: 'var(--border-color)' }}
+                        title="Eliminar este componente"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sub-lista de Capítulos de este Componente */}
+                {!isCollapsed && (
+                  capitulos.length === 0 ? (
+                    <div 
+                      className="text-center py-6 text-xs text-slate-400 border border-dashed rounded-lg"
+                      style={{ borderColor: 'var(--border-color)' }}
+                    >
+                      Este componente no tiene capítulos asignados todavía.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {capitulos.map((cap) => (
+                        <div
+                          key={cap.id}
+                          className="p-3 rounded-lg border shadow-2xs space-y-2 flex flex-col justify-between transition hover:border-slate-400 dark:hover:border-slate-600"
+                          style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-mono font-bold text-[11px] text-slate-500">
+                                Cap. #{cap.numero}
+                              </span>
+                              {getStatusBadge(cap.estado?.nombre)}
+                            </div>
+
+                            <h3 className="font-bold text-xs leading-snug text-slate-800 dark:text-slate-100 line-clamp-2" title={cap.titulo}>
+                              {cap.titulo}
+                            </h3>
+                          </div>
+
+                          <div className="pt-2 border-t flex items-center justify-between text-xs" style={{ borderColor: 'var(--border-color)' }}>
+                            <Link 
+                              to={`/capitulos/${cap.id}`} 
+                              className="inline-flex items-center gap-1 text-xs font-bold text-sistemas-cyan hover:underline"
+                            >
+                              <span>Gestionar</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </Link>
+
+                            {!esInvitado && (
+                              <button
+                                onClick={() => eliminarCapitulo(cap)}
+                                className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition"
+                                title="Eliminar capítulo"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* 3. Modal de Nuevo Componente */}
       {showCompModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div 
-            className="w-full max-w-md p-6 rounded-2xl border shadow-2xl relative"
+            className="w-full max-w-md p-6 rounded-xl border shadow-2xl relative"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
           >
             <button 
               onClick={() => setShowCompModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:opacity-80 transition"
+              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               style={{ borderColor: 'var(--border-color)' }}
             >
               <X className="w-4 h-4" />
             </button>
 
-            <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <Layers className="w-4 h-4 text-purple-500" /> Registrar Componente Temático
+            <h2 className="text-sm font-bold flex items-center gap-2 mb-1 text-slate-900 dark:text-white">
+              <Layers className="w-4 h-4 text-sky-500" /> Registrar Nuevo Componente
             </h2>
-            <p className="text-xs opacity-60 mb-4">
-              Sección estructural mayor del documento curricular.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Los componentes agrupan capítulos correlativos del documento de rediseño curricular.
             </p>
 
             {compError && (
@@ -464,39 +409,39 @@ export const RedesignOverview: React.FC = () => {
 
             <form onSubmit={handleCrearComponente} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold mb-1">Número de Componente:</label>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Número Correlativo:</label>
                 <input
                   type="number"
                   min="1"
                   value={compNumero}
                   onChange={(e) => setCompNumero(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Nombre del Componente:</label>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nombre del Componente:</label>
                 <input
                   type="text"
                   value={compNombre}
                   onChange={(e) => setCompNombre(e.target.value)}
-                  placeholder="ej: Componente de Infraestructura y Equipamiento"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  placeholder="ej: Marco Doctrinal e Institucional"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Descripción / Alcance:</label>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Descripción / Alcance:</label>
                 <textarea
-                  rows={3}
                   value={compDesc}
                   onChange={(e) => setCompDesc(e.target.value)}
-                  placeholder="Objetivos o alcance temático de esta sección..."
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  placeholder="Descripción de los contenidos requeridos..."
+                  rows={3}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-medium"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                 />
               </div>
@@ -505,7 +450,7 @@ export const RedesignOverview: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowCompModal(false)}
-                  className="px-4 py-2 border rounded-lg hover:opacity-80 transition"
+                  className="px-4 py-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-slate-700 dark:text-slate-300"
                   style={{ borderColor: 'var(--border-color)' }}
                 >
                   Cancelar
@@ -513,10 +458,99 @@ export const RedesignOverview: React.FC = () => {
                 <button
                   type="submit"
                   disabled={savingComp}
-                  className="px-4 py-2 rounded-lg font-bold shadow-sm transition disabled:opacity-50"
-                  style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+                  className="px-4 py-2 rounded-lg font-bold shadow-xs transition disabled:opacity-50 bg-sky-500 hover:bg-sky-600 text-white"
                 >
-                  {savingComp ? 'Guardando...' : 'Guardar Componente'}
+                  {savingComp ? 'Guardando...' : 'Crear Componente'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Modal de Nuevo Capítulo */}
+      {showChapterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div 
+            className="w-full max-w-lg p-6 rounded-xl border shadow-2xl relative"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
+          >
+            <button 
+              onClick={() => setShowChapterModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              style={{ borderColor: 'var(--border-color)' }}
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h2 className="text-sm font-bold flex items-center gap-2 mb-1 text-slate-900 dark:text-white">
+              <BookOpen className="w-4 h-4 text-sky-500" /> Registrar Nuevo Capítulo
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              El capítulo se inicializará en estado "Borrador" para asignación de redactores.
+            </p>
+
+            {chapError && (
+              <div className="mb-4 p-3 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{chapError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCrearCapitulo} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Número Correlativo del Capítulo:</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={chapNumero}
+                  onChange={(e) => setChapNumero(Number(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Título Oficial del Capítulo:</label>
+                <input
+                  type="text"
+                  value={chapTitulo}
+                  onChange={(e) => setChapTitulo(e.target.value)}
+                  placeholder="ej: Fundamentación Filosófica y Epistemológica"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Contenido Inicial / Directrices:</label>
+                <textarea
+                  value={chapContenido}
+                  onChange={(e) => setChapContenido(e.target.value)}
+                  placeholder="Directrices para los redactores..."
+                  rows={3}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-medium"
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                />
+              </div>
+
+              <div className="pt-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border-color)' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowChapterModal(false)}
+                  className="px-4 py-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-slate-700 dark:text-slate-300"
+                  style={{ borderColor: 'var(--border-color)' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingChap}
+                  className="px-4 py-2 rounded-lg font-bold shadow-xs transition disabled:opacity-50 bg-sky-500 hover:bg-sky-600 text-white"
+                >
+                  {savingChap ? 'Guardando...' : 'Crear Capítulo'}
                 </button>
               </div>
             </form>
@@ -526,4 +560,3 @@ export const RedesignOverview: React.FC = () => {
     </div>
   );
 };
-

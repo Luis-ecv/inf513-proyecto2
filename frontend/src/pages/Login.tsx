@@ -4,9 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { 
-  GraduationCap, Lock, Mail, AlertCircle, ArrowRight, 
-  Sun, Moon, ShieldAlert, Clock, X 
+  Lock, Mail, AlertCircle, ArrowRight, 
+  Sun, Moon, ShieldAlert, Clock, X, ShieldCheck
 } from 'lucide-react';
+import isotipoSistemas from '../assets/branding/isotipo-sistemas.jpg';
+import logoSistemas from '../assets/branding/logo-sistemas.jpg';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
@@ -93,46 +95,86 @@ export const Login: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 transition-colors relative"
+      className="min-h-screen flex items-center justify-center p-4 transition-colors relative select-none"
       style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}
     >
-      {/* Botones flotantes de tema y modo en la esquina */}
+      {/* Botones de tema y modo en esquina superior */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
-        <div className="flex border rounded-lg p-0.5 text-xs" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-surface)' }}>
-          <button onClick={() => setTheme('ninos')} className={`px-2 py-1 rounded ${theme === 'ninos' ? 'font-bold underline' : 'opacity-70'}`}>🎨 Niños</button>
-          <button onClick={() => setTheme('jovenes')} className={`px-2 py-1 rounded ${theme === 'jovenes' ? 'font-bold underline' : 'opacity-70'}`}>⚡ Jóvenes</button>
-          <button onClick={() => setTheme('adultos')} className={`px-2 py-1 rounded ${theme === 'adultos' ? 'font-bold underline' : 'opacity-70'}`}>👔 Adultos</button>
+        <div 
+          className="flex border rounded-lg p-0.5 text-xs shadow-xs" 
+          style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-surface)' }}
+        >
+          <button 
+            onClick={() => setTheme('adultos')} 
+            className={`px-2.5 py-1 rounded text-[11px] font-semibold transition ${
+              theme === 'adultos' ? 'bg-sky-500 text-white dark:text-slate-950 font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            👔 Adultos
+          </button>
+          <button 
+            onClick={() => setTheme('jovenes')} 
+            className={`px-2.5 py-1 rounded text-[11px] font-semibold transition ${
+              theme === 'jovenes' ? 'bg-emerald-600 text-white dark:text-slate-950 font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            ⚡ Jóvenes
+          </button>
+          <button 
+            onClick={() => setTheme('ninos')} 
+            className={`px-2.5 py-1 rounded text-[11px] font-semibold transition ${
+              theme === 'ninos' ? 'bg-amber-500 text-white dark:text-slate-950 font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            🎨 Niños
+          </button>
         </div>
         <button
           onClick={toggleMode}
-          className="p-2 border rounded-lg hover:opacity-80 transition"
+          className="p-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300"
           style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-surface)' }}
+          title="Alternar Modo Día / Noche"
         >
-          {mode === 'dark' ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+          {mode === 'dark' ? <Moon className="w-4 h-4 text-sky-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
         </button>
       </div>
 
       <div
-        className="w-full max-w-md p-8 rounded-2xl border shadow-xl transition-all"
+        className="w-full max-w-md p-6 sm:p-8 rounded-xl border shadow-xl transition-all"
         style={{
           backgroundColor: 'var(--bg-card)',
           borderColor: 'var(--border-color)',
         }}
       >
-        {/* Encabezado del Formulario */}
+        {/* Encabezado Institucional Oficial FICCT - UAGRM */}
         <div className="text-center mb-6">
-          <div className="inline-flex p-3 rounded-2xl mb-3 shadow-inner" style={{ backgroundColor: 'var(--bg-app)' }}>
-            <GraduationCap className="w-10 h-10" style={{ color: 'var(--primary)' }} />
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-xl overflow-hidden border p-1.5 flex items-center justify-center shadow-xs bg-white dark:bg-slate-900" style={{ borderColor: 'var(--border-color)' }}>
+              <img 
+                src={isotipoSistemas} 
+                alt="Isotipo Ingeniería en Sistemas" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="h-10 flex items-center">
+              <img 
+                src={logoSistemas} 
+                alt="Ingeniería en Sistemas FICCT UAGRM" 
+                className="h-full object-contain max-w-[200px]"
+              />
+            </div>
           </div>
-          <h1 className="text-xl font-bold tracking-tight">Seguimiento al Diseño Curricular</h1>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-            Ingeniería en Sistemas • INF-513 Tecnología Web
+          <h1 className="text-base font-bold tracking-tight text-slate-900 dark:text-white uppercase">
+            Rediseño Curricular
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Facultad de Ingeniería en Ciencias de la Computación y Telecomunicaciones
           </p>
         </div>
 
         {/* Mensaje de Bloqueo Temporal (Fuerza Bruta) */}
         {isLocked && (
-          <div className="mb-4 p-3 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-300 text-xs flex items-center justify-between">
+          <div className="mb-4 p-3 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-300 text-xs flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 shrink-0 animate-pulse text-rose-500" />
               <div>
@@ -140,13 +182,13 @@ export const Login: React.FC = () => {
                 <div className="text-[11px] opacity-90">Espere a que finalice el temporizador de seguridad.</div>
               </div>
             </div>
-            <div className="px-2.5 py-1 rounded-lg font-mono font-bold bg-rose-600 text-white text-xs shrink-0">
+            <div className="px-2.5 py-1 rounded-md font-mono font-bold bg-rose-600 text-white text-xs shrink-0">
               {formatSeconds(lockSeconds)}
             </div>
           </div>
         )}
 
-        {/* Mensaje de Error en Español / Alerta de intentos restantes */}
+        {/* Mensaje de Error / Alerta de intentos restantes */}
         {!isLocked && errorMsg && (
           <div className="mb-4 p-3 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -164,18 +206,18 @@ export const Login: React.FC = () => {
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-main)' }}>
-              Correo electrónico o Nombre de usuario
+            <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">
+              Usuario o Correo Institucional
             </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3 top-3 opacity-50" />
+            <div className="relative flex items-center">
+              <Mail className="w-4 h-4 absolute left-3 text-slate-400" />
               <input
                 type="text"
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
                 placeholder="ej: director o usuario@uagrm.edu.bo"
                 disabled={isLocked}
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:outline-none transition disabled:opacity-50"
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-sky-500 transition disabled:opacity-50 font-medium"
                 style={{
                   backgroundColor: 'var(--bg-app)',
                   borderColor: 'var(--border-color)',
@@ -187,18 +229,18 @@ export const Login: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-main)' }}>
+            <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">
               Contraseña
             </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-3 opacity-50" />
+            <div className="relative flex items-center">
+              <Lock className="w-4 h-4 absolute left-3 text-slate-400" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={isLocked}
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:outline-none transition disabled:opacity-50"
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-sky-500 transition disabled:opacity-50 font-medium"
                 style={{
                   backgroundColor: 'var(--bg-app)',
                   borderColor: 'var(--border-color)',
@@ -212,93 +254,70 @@ export const Login: React.FC = () => {
           <button
             type="submit"
             disabled={loading || isLocked}
-            className="w-full py-2.5 px-4 rounded-lg font-semibold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: isLocked ? 'var(--border-color)' : 'var(--primary)',
-              color: isLocked ? 'var(--text-muted)' : 'var(--primary-text)',
-            }}
+            className="w-full py-2.5 px-4 rounded-lg font-bold text-xs shadow-sm transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed bg-sky-500 hover:bg-sky-600 text-white"
           >
             {isLocked ? (
               <>
-                <Clock className="w-4 h-4 animate-spin text-rose-500" />
-                <span>Bloqueado por 5 min ({formatSeconds(lockSeconds)})</span>
+                <Clock className="w-4 h-4 animate-spin text-white" />
+                <span>Bloqueado ({formatSeconds(lockSeconds)})</span>
               </>
             ) : loading ? (
               'Validando credenciales...'
             ) : (
               <>
-                <span>Iniciar Sesión</span>
+                <span>Ingresar al Sistema</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
         </form>
 
-        {/* Cuentas de Acceso Rápido para Pruebas y Evaluación */}
-        <div className="mt-6 pt-5 border-t text-xs" style={{ borderColor: 'var(--border-color)' }}>
-          <div className="font-semibold mb-2 text-center opacity-70">
-            Cuentas precargadas con políticas de seguridad vigentes:
+        {/* Cuentas de Acceso Rápido para Demostración */}
+        <div className="mt-6 pt-4 border-t text-xs" style={{ borderColor: 'var(--border-color)' }}>
+          <div className="font-semibold text-[11px] mb-2 text-center text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            Cuentas precargadas para evaluación:
           </div>
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <div className="grid grid-cols-2 gap-1.5 text-[11px]">
             <button
               type="button"
               onClick={() => setTestAccount('director', 'Director123!')}
               disabled={isLocked}
-              className="p-1.5 border rounded hover:opacity-80 transition text-left disabled:opacity-40"
+              className="p-1.5 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left disabled:opacity-40"
               style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
             >
-              <div className="font-bold text-amber-500">Director / Evans</div>
-              <div className="opacity-60 text-[10px]">director / Director123!</div>
+              <div className="font-bold text-amber-500">Director (Evans)</div>
+              <div className="text-slate-400 text-[10px]">director / Director123!</div>
             </button>
             <button
               type="button"
               onClick={() => setTestAccount('cmarca', 'Carlos123#')}
               disabled={isLocked}
-              className="p-1.5 border rounded hover:opacity-80 transition text-left disabled:opacity-40"
+              className="p-1.5 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left disabled:opacity-40"
               style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
             >
-              <div className="font-bold text-blue-500">Carlos Marca</div>
-              <div className="opacity-60 text-[10px]">cmarca / Carlos123#</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTestAccount('luisecv', 'Luis2026ñ#')}
-              disabled={isLocked}
-              className="p-1.5 border rounded hover:opacity-80 transition text-left disabled:opacity-40"
-              style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
-            >
-              <div className="font-bold text-purple-500">Luis Fernando</div>
-              <div className="opacity-60 text-[10px]">luisecv / Luis2026ñ#</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTestAccount('tvalda', 'Tania2026ñ!')}
-              disabled={isLocked}
-              className="p-1.5 border rounded hover:opacity-80 transition text-left disabled:opacity-40"
-              style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
-            >
-              <div className="font-bold text-emerald-500">Tania Valda</div>
-              <div className="opacity-60 text-[10px]">tvalda / Tania2026ñ!</div>
+              <div className="font-bold text-sky-500">Carlos Marca</div>
+              <div className="text-slate-400 text-[10px]">cmarca / Carlos123#</div>
             </button>
             <button
               type="button"
               onClick={() => setTestAccount('croca', 'Delegado2026ñ$')}
               disabled={isLocked}
-              className="p-1.5 border rounded hover:opacity-80 transition text-left disabled:opacity-40"
+              className="p-1.5 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left disabled:opacity-40"
               style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
             >
-              <div className="font-bold text-cyan-500">Delegado / Roca</div>
-              <div className="opacity-60 text-[10px]">croca / Delegado2026ñ$</div>
+              <div className="font-bold text-emerald-500">Delegado (Roca)</div>
+              <div className="text-slate-400 text-[10px]">croca / Delegado2026ñ$</div>
             </button>
             <button
               type="button"
               onClick={() => setTestAccount('mmendoza', 'Invitado2026ñ*')}
               disabled={isLocked}
-              className="p-1.5 border rounded hover:opacity-80 transition text-left disabled:opacity-40"
+              className="p-1.5 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left disabled:opacity-40"
               style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
             >
-              <div className="font-bold text-slate-500">Invitado / Mendoza</div>
-              <div className="opacity-60 text-[10px]">mmendoza / Invitado2026ñ*</div>
+              <div className="font-bold text-slate-500">Invitado (Mendoza)</div>
+              <div className="text-slate-400 text-[10px]">mmendoza / Invitado2026ñ*</div>
             </button>
           </div>
         </div>
@@ -306,9 +325,9 @@ export const Login: React.FC = () => {
 
       {/* Modal Emergente de Alerta de Bloqueo (Fuerza Bruta) */}
       {showLockModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
           <div
-            className="w-full max-w-md rounded-2xl border shadow-2xl p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-md rounded-xl border shadow-2xl p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
           >
             <div className="flex justify-end">
@@ -320,24 +339,26 @@ export const Login: React.FC = () => {
               </button>
             </div>
 
-            <div className="inline-flex p-4 rounded-3xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
-              <ShieldAlert className="w-14 h-14 animate-pulse" />
+            <div className="inline-flex p-4 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
+              <ShieldAlert className="w-12 h-12 animate-pulse" />
             </div>
 
-            <h2 className="text-xl font-black text-rose-600 dark:text-rose-400">
+            <h2 className="text-lg font-black text-rose-600 dark:text-rose-400">
               Acceso Bloqueado por Seguridad
             </h2>
 
-            <p className="text-xs leading-relaxed opacity-85">
+            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
               Se ha detectado un número excesivo de intentos fallidos (límite de <strong>5 intentos</strong> superado).
               Por directrices de protección contra ataques de fuerza bruta, el acceso para esta cuenta e IP ha sido <strong>bloqueado por 5 minutos</strong>.
             </p>
 
-            <div className="p-3 rounded-xl bg-black/5 dark:bg-white/5 border flex items-center justify-center gap-3"
-              style={{ borderColor: 'var(--border-color)' }}>
+            <div 
+              className="p-3 rounded-lg border flex items-center justify-center gap-3"
+              style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+            >
               <Clock className="w-5 h-5 text-amber-500" />
               <div className="text-xs">
-                <span className="opacity-70">Tiempo restante de espera: </span>
+                <span className="text-slate-500">Tiempo restante de espera: </span>
                 <span className="font-mono font-bold text-base text-rose-500 ml-1">
                   {formatSeconds(lockSeconds)}
                 </span>
@@ -346,7 +367,7 @@ export const Login: React.FC = () => {
 
             <button
               onClick={() => setShowLockModal(false)}
-              className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs border transition hover:opacity-80"
+              className="w-full py-2.5 px-4 rounded-lg font-semibold text-xs border transition hover:opacity-80"
               style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-surface)' }}
             >
               Entendido (Aguardar temporizador)

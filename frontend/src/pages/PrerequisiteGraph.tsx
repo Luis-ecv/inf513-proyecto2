@@ -116,19 +116,19 @@ export const PrerequisiteGraph: React.FC = () => {
           })
         );
 
-        // Actualizar aristas
+        // Actualizar aristas con colores oficiales
         setEdges((prevEdges) =>
           prevEdges.map((e) => {
-            const isRelevant =
-              (e.target === node.id && preSet.has(Number(e.source))) ||
-              (e.source === node.id && depSet.has(Number(e.target)));
+            const isBackward = e.target === node.id && preSet.has(Number(e.source));
+            const isForward = e.source === node.id && depSet.has(Number(e.target));
+            const isRelevant = isBackward || isForward;
 
             return {
               ...e,
               animated: isRelevant,
               style: {
                 ...e.style,
-                stroke: isRelevant ? '#f59e0b' : 'rgba(150, 150, 150, 0.2)',
+                stroke: isBackward ? '#f59e0b' : isForward ? '#8dc63f' : 'rgba(150, 150, 150, 0.2)',
                 strokeWidth: isRelevant ? 3 : 1,
               },
             };
@@ -241,81 +241,90 @@ export const PrerequisiteGraph: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-sm opacity-60">Cargando grafo interactivo de prelaciones...</div>
+        <div className="text-xs font-semibold text-slate-400 animate-pulse flex items-center gap-2">
+          <GitFork className="w-4 h-4 animate-spin text-sistemas-cyan" />
+          Cargando grafo interactivo de prelaciones pedagógicas...
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Barra de Acciones y Leyenda */}
+      {/* 1. Barra Superior de Control y Leyenda */}
       <div 
-        className="p-4 rounded-2xl border shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+        className="p-4 rounded-xl border shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
       >
         <div className="flex items-center gap-3">
           <Link
             to="/malla"
-            className="p-2 border rounded-lg hover:opacity-80 transition"
+            className="p-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300"
             style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
-            title="Volver a la Malla"
+            title="Volver a la Malla Curricular"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <h1 className="text-lg font-bold flex items-center gap-2">
-              <GitFork className="w-5 h-5 text-purple-500" />
+            <h1 className="text-base font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+              <GitFork className="w-4 h-4 text-sistemas-cyan" />
               Grafo Acíclico Dirigido (DAG) de Prerrequisitos
             </h1>
-            <p className="text-xs opacity-60">
-              Haz clic en cualquier asignatura para resaltar su trazabilidad pedagógica.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Haz clic sobre cualquier asignatura para inspeccionar su cadena de prelaciones.
             </p>
           </div>
         </div>
 
-        {/* Leyenda y Botones */}
+        {/* Leyenda y Acciones */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Leyenda de colores */}
-          <div className="flex items-center gap-3 text-[11px] px-3 py-1.5 border rounded-lg" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Requisito previo (atrás)
+          <div 
+            className="flex items-center gap-3 text-[11px] font-medium px-3 py-1.5 border rounded-lg" 
+            style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+          >
+            <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Previo (atrás)
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Materia bloqueada (adelante)
+            <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-sistemas-green" /> Dependiente (adelante)
             </span>
           </div>
 
           {selectedSubject && (
             <button
               onClick={resetHighlight}
-              className="flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-semibold hover:opacity-80 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300"
               style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
             >
               <RotateCcw className="w-3.5 h-3.5" /> Limpiar Selección
             </button>
           )}
 
-          {!esInvitado && <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition"
-            style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
-          >
-            <Plus className="w-4 h-4" /> Vincular Materia
-          </button>}
-          {!esInvitado && <button
-            onClick={() => setShowDesvincularModal(true)}
-            disabled={rawEdges.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold hover:opacity-80 transition disabled:opacity-40"
-            style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
-          >
-            <Unlink className="w-4 h-4 text-rose-500" /> Desvincular Materia
-          </button>}
+          {!esInvitado && (
+            <>
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs transition bg-sky-500 hover:bg-sky-600 text-white"
+              >
+                <Plus className="w-3.5 h-3.5" /> Vincular Materia
+              </button>
+              <button
+                onClick={() => setShowDesvincularModal(true)}
+                disabled={rawEdges.length === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold hover:bg-rose-500/10 transition disabled:opacity-40 text-rose-500"
+                style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+              >
+                <Unlink className="w-3.5 h-3.5" /> Desvincular
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Contenedor del Grafo Interactivo con React Flow */}
+      {/* 2. Contenedor del Grafo Interactivo */}
       <div 
-        className="h-[620px] rounded-2xl border shadow-inner relative overflow-hidden"
+        className="h-[640px] rounded-xl border shadow-inner relative overflow-hidden"
         style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
       >
         <ReactFlow
@@ -335,91 +344,92 @@ export const PrerequisiteGraph: React.FC = () => {
           <Background color="var(--border-color)" gap={20} size={1} />
           <Controls />
           <MiniMap 
-            nodeStrokeColor="var(--primary)"
+            nodeStrokeColor="#009fe3"
             nodeColor="var(--bg-card)"
             style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
           />
         </ReactFlow>
 
-        {/* Panel lateral con detalle de la materia seleccionada */}
+        {/* Panel lateral flotante con detalle de la materia seleccionada */}
         {selectedSubject && (
           <div 
-            className="absolute top-4 right-4 w-72 p-4 rounded-xl border shadow-xl text-xs z-10 backdrop-blur-md space-y-2 animate-in fade-in"
+            className="absolute top-4 right-4 w-76 p-4 rounded-xl border shadow-xl text-xs z-10 backdrop-blur-md space-y-2.5 animate-in fade-in slide-in-from-right-2 duration-150"
             style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
           >
             <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-color)' }}>
               <div>
-                <span className="font-extrabold text-sm text-blue-500">{selectedSubject.sigla}</span>
-                <span className="text-[10px] ml-2 opacity-60">Semestre {selectedSubject.semestre}</span>
+                <span className="font-mono font-bold text-sm text-sistemas-cyan">{selectedSubject.sigla}</span>
+                <span className="text-[10px] ml-2 font-medium text-slate-500">Semestre {selectedSubject.semestre}</span>
               </div>
-              <button onClick={resetHighlight} className="p-1 hover:opacity-70">
-                <X className="w-4 h-4" />
+              <button onClick={resetHighlight} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md text-slate-400 hover:text-slate-600">
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="font-semibold text-xs leading-tight">
+            <div className="font-bold text-xs leading-snug text-slate-800 dark:text-slate-100">
               {selectedSubject.nombre}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-[10px] py-1">
+            <div className="grid grid-cols-2 gap-2 text-[10px] py-1 border-y" style={{ borderColor: 'var(--border-color)' }}>
               <div>
-                <span className="opacity-60 block">Créditos:</span>
-                <span className="font-bold">{selectedSubject.creditos} cr</span>
+                <span className="text-slate-400 block font-medium">Créditos:</span>
+                <span className="font-bold text-slate-700 dark:text-slate-200">{selectedSubject.creditos} cr</span>
               </div>
               <div>
-                <span className="opacity-60 block">Área Formativa:</span>
-                <span className="font-bold truncate block">{selectedSubject.areaFormativa}</span>
+                <span className="text-slate-400 block font-medium">Área Formativa:</span>
+                <span className="font-bold text-slate-700 dark:text-slate-200 truncate block">{selectedSubject.areaFormativa}</span>
               </div>
             </div>
 
-            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-700 dark:text-amber-300">
+            <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 dark:text-amber-300">
               <span className="font-bold block">⬅ Trazabilidad hacia atrás:</span>
-              Las materias en tono ámbar son prerrequisitos mandatorios para cursar esta materia.
+              Materias en tono ámbar que deben aprobarse previamente.
             </div>
 
-            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-700 dark:text-emerald-300">
+            <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-700 dark:text-emerald-300">
               <span className="font-bold block">➡ Trazabilidad hacia adelante:</span>
-              Las materias en tono verde dependen de haber aprobado esta materia previamente.
+              Materias en tono verde que se habilitan al aprobar esta asignatura.
             </div>
           </div>
         )}
 
+        {/* Modal de Desvinculación */}
         {showDesvincularModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
             <div
-              className="w-full max-w-lg p-6 rounded-2xl border shadow-2xl relative"
+              className="w-full max-w-lg p-6 rounded-xl border shadow-2xl relative"
               style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
             >
               <button
                 onClick={() => setShowDesvincularModal(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-lg border hover:opacity-80 transition"
+                className="absolute top-4 right-4 p-1.5 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                 style={{ borderColor: 'var(--border-color)' }}
               >
                 <X className="w-4 h-4" />
               </button>
-              <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-                <Unlink className="w-4 h-4 text-rose-500" /> Desvincular Materia
+              <h2 className="text-sm font-bold flex items-center gap-2 mb-1 text-slate-900 dark:text-white">
+                <Unlink className="w-4 h-4 text-rose-500" /> Desvincular Prelación Académica
               </h2>
-              <p className="text-xs opacity-60 mb-4">
-                Selecciona la relación que deseas quitar del grafo.
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                Selecciona la arista de prerrequisito que deseas eliminar del grafo curricular.
               </p>
-              <div className="space-y-2 max-h-80 overflow-y-auto">
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                 {rawEdges.map((edge) => (
                   <div
                     key={edge.id}
                     className="flex items-center justify-between gap-3 p-3 rounded-lg border text-xs"
                     style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
                   >
-                    <span className="min-w-0 truncate">
-                      {nombreMateria(edge.source)} <span className="opacity-50">→</span> {nombreMateria(edge.target)}
+                    <span className="min-w-0 truncate font-medium text-slate-700 dark:text-slate-200">
+                      {nombreMateria(edge.source)} <span className="text-slate-400">→</span> {nombreMateria(edge.target)}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleDesvincular(edge)}
                       disabled={unlinkingEdgeId === edge.id}
-                      className="shrink-0 p-1.5 rounded border text-rose-500 hover:bg-rose-500/10 disabled:opacity-40"
+                      className="shrink-0 p-1.5 rounded-md border text-rose-500 hover:bg-rose-500/10 disabled:opacity-40 transition"
                       style={{ borderColor: 'var(--border-color)' }}
-                      title="Desvincular esta relación"
+                      title="Eliminar esta prelación"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -429,28 +439,27 @@ export const PrerequisiteGraph: React.FC = () => {
             </div>
           </div>
         )}
-
       </div>
 
-      {/* Modal para Vincular Prerrequisito con Validación de Grafo (RF-03) */}
+      {/* 3. Modal para Vincular Prerrequisito con Validación de Grafo (RF-03) */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div 
-            className="w-full max-w-md p-6 rounded-2xl border shadow-2xl relative"
+            className="w-full max-w-md p-6 rounded-xl border shadow-2xl relative"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
           >
             <button 
               onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:opacity-80 transition"
+              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               style={{ borderColor: 'var(--border-color)' }}
             >
               <X className="w-4 h-4" />
             </button>
 
-            <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <GitFork className="w-4 h-4 text-purple-500" /> Vincular Materia
+            <h2 className="text-sm font-bold flex items-center gap-2 mb-1 text-slate-900 dark:text-white">
+              <GitFork className="w-4 h-4 text-sistemas-cyan" /> Vincular Materia Prerrequisito
             </h2>
-            <p className="text-xs opacity-60 mb-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
               El motor en el backend validará que la nueva arista no genere ciclos directos ni indirectos.
             </p>
 
@@ -470,11 +479,13 @@ export const PrerequisiteGraph: React.FC = () => {
 
             <form onSubmit={handleVincular} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold mb-1">Materia Destino (La que exige el requisito):</label>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">
+                  Materia Destino (La que exige el requisito):
+                </label>
                 <select
                   value={targetAsigId}
                   onChange={(e) => setTargetAsigId(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   required
                 >
@@ -488,11 +499,13 @@ export const PrerequisiteGraph: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Materia Prerrequisito (La que se debe aprobar antes):</label>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">
+                  Materia Prerrequisito (La que se debe aprobar antes):
+                </label>
                 <select
                   value={reqAsigId}
                   onChange={(e) => setReqAsigId(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   required
                 >
@@ -505,10 +518,13 @@ export const PrerequisiteGraph: React.FC = () => {
                 </select>
               </div>
 
-              <div className="p-3 rounded-xl border flex items-start gap-2 text-[11px] opacity-75" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
-                <Info className="w-4 h-4 shrink-0 text-blue-500 mt-0.5" />
+              <div 
+                className="p-3 rounded-lg border flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300" 
+                style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+              >
+                <Info className="w-4 h-4 shrink-0 text-sky-500 mt-0.5" />
                 <span>
-                  <strong>Control de Grafo:</strong> Si seleccionas dependencias circulares (ej. $A \to B \to A$), el algoritmo BFS del backend rechazará la operación protegiendo la integridad de la malla.
+                  <strong>Control de Grafo:</strong> Si intentas conectar dependencias cíclicas, el algoritmo BFS del backend rechazará la operación protegiendo la consistencia de la carrera.
                 </span>
               </div>
 
@@ -516,7 +532,7 @@ export const PrerequisiteGraph: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border rounded-lg hover:opacity-80 transition"
+                  className="px-4 py-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-slate-700 dark:text-slate-300"
                   style={{ borderColor: 'var(--border-color)' }}
                 >
                   Cancelar
@@ -524,8 +540,7 @@ export const PrerequisiteGraph: React.FC = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg font-bold shadow-sm transition disabled:opacity-50"
-                  style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+                  className="px-4 py-2 rounded-lg font-bold shadow-xs transition disabled:opacity-50 bg-sky-500 hover:bg-sky-600 text-white"
                 >
                   {saving ? 'Validando Grafo...' : 'Vincular Prerrequisito'}
                 </button>

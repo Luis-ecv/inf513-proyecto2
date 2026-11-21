@@ -59,6 +59,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.setAttribute('data-mode', mode);
     root.setAttribute('data-font-size', fontSize);
     root.setAttribute('data-contrast', contrast);
+    root.classList.toggle('dark', mode === 'dark');
   }, [theme, mode, fontSize, contrast]);
 
   // Si está activo el modo automático, sincronizar periódicamente según la hora local

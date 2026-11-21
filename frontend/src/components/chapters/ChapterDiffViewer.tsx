@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { VersionCapitulo } from '../../types';
 import { computeLineDiff } from '../../utils/diffUtils';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   GitCompare, Maximize2, Minimize2, Download, Clock, 
   User, CheckCircle2, FileText, ArrowRight, Layers 
@@ -11,6 +12,8 @@ interface ChapterDiffViewerProps {
 }
 
 export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones }) => {
+  const { mode } = useTheme();
+  const isDark = mode === 'dark';
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Ordenar de más antigua a más reciente para el orden lógico de comparación
@@ -56,23 +59,23 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
   if (sortedAsc.length === 0) {
     return (
       <div 
-        className="p-12 text-center rounded-2xl border border-dashed space-y-3"
+        className="p-10 text-center rounded-xl border border-dashed space-y-2.5"
         style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}
       >
-        <div className="inline-flex p-3 rounded-2xl bg-black/5 dark:bg-white/5 opacity-60">
-          <Layers className="w-8 h-8" />
+        <div className="inline-flex p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400">
+          <Layers className="w-6 h-6" />
         </div>
-        <h3 className="text-sm font-bold">Sin Versiones Registradas</h3>
-        <p className="text-xs opacity-60 max-w-md mx-auto">
-          Aún no se ha cargado ningún documento para este capítulo. Suba el primer archivo PDF o borrador para iniciar el historial de versiones.
+        <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">Sin Versiones Registradas</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+          Aún no se ha cargado ningún documento digital para este capítulo. Sube un archivo PDF o Markdown para inicializar el historial de versiones.
         </p>
       </div>
     );
   }
 
   const containerClasses = isFullScreen
-    ? 'fixed inset-0 z-[150] p-6 overflow-y-auto backdrop-blur-md flex flex-col'
-    : 'rounded-2xl border shadow-sm space-y-4 p-5';
+    ? 'fixed inset-0 z-150 p-6 overflow-y-auto backdrop-blur-md flex flex-col'
+    : 'rounded-xl border shadow-xs space-y-3.5 p-4';
 
   return (
     <div
@@ -84,20 +87,23 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
       }}
     >
       {/* Barra de Controles y Selección de Versiones */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-primary/10 text-primary">
-            <GitCompare className="w-5 h-5" />
+      <div 
+        className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 pb-3 border-b" 
+        style={{ borderColor: 'var(--border-color)' }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-sky-500/10 text-sistemas-cyan">
+            <GitCompare className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-bold text-sm flex items-center gap-2">
-              <span>Comparador de Versiones de Documento</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-primary/10 text-primary">
-                Modo Git Unificado
+            <h3 className="font-bold text-xs flex items-center gap-2 text-slate-800 dark:text-slate-100">
+              <span>Comparador Diferencial de Versiones</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-sky-500/10 text-sistemas-cyan border border-sky-500/20">
+                LCS Git-Style
               </span>
             </h3>
-            <p className="text-[11px] opacity-60">
-              Contraste visual de cambios redactados entre entregas de subsanación.
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Contraste de líneas redactadas entre entregas técnicas de subsanación.
             </p>
           </div>
         </div>
@@ -106,11 +112,11 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           {sortedAsc.length > 1 && (
             <div className="flex items-center gap-2 text-xs">
-              <span className="opacity-60 text-[11px]">Comparar:</span>
+              <span className="text-slate-400 text-[11px] font-medium">Comparar:</span>
               <select
                 value={baseVersionId}
                 onChange={(e) => setBaseVersionId(Number(e.target.value))}
-                className="px-2.5 py-1.5 rounded-lg border font-semibold text-xs focus:outline-none"
+                className="px-2.5 py-1 rounded-lg border font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-sky-500"
                 style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
               >
                 {sortedAsc.map((v) => (
@@ -120,12 +126,12 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
                 ))}
               </select>
 
-              <ArrowRight className="w-3.5 h-3.5 opacity-40 shrink-0" />
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
 
               <select
                 value={targetVersionId}
                 onChange={(e) => setTargetVersionId(Number(e.target.value))}
-                className="px-2.5 py-1.5 rounded-lg border font-semibold text-xs focus:outline-none"
+                className="px-2.5 py-1 rounded-lg border font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-sky-500"
                 style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
               >
                 {sortedAsc.map((v) => (
@@ -140,7 +146,7 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
           {/* Botón de Pantalla Completa */}
           <button
             onClick={() => setIsFullScreen(!isFullScreen)}
-            className="p-2 rounded-lg border hover:opacity-80 transition ml-auto"
+            className="p-1.5 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition ml-auto text-slate-600 dark:text-slate-300"
             style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
             title={isFullScreen ? 'Salir de pantalla completa' : 'Ver a pantalla completa'}
           >
@@ -149,29 +155,32 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
         </div>
       </div>
 
-      {/* Resumen de Métricas de Cambio (Badges estilo GitHub) */}
+      {/* Resumen de Métricas de Cambio */}
       {diffResult && (
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-black/5 dark:bg-white/5 border text-xs" style={{ borderColor: 'var(--border-color)' }}>
+        <div 
+          className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-lg border text-xs" 
+          style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+        >
           <div className="flex items-center gap-2 font-mono">
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 text-[11px]">
               +{diffResult.stats.additions} adiciones
             </span>
-            <span className="font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
+            <span className="font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 text-[11px]">
               -{diffResult.stats.deletions} eliminaciones
             </span>
-            <span className="opacity-60 text-[11px]">
+            <span className="text-slate-500 dark:text-slate-400 text-[11px] font-sans font-medium">
               {diffResult.stats.totalLines} líneas analizadas
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] opacity-75">
+          <div className="flex items-center gap-3 text-[11px]">
             {targetVersion?.archivo_ruta && (
               <a
                 href={`/storage/${targetVersion.archivo_ruta}`}
                 target="_blank"
                 rel="noreferrer"
                 download
-                className="flex items-center gap-1.5 text-primary hover:underline font-semibold"
+                className="flex items-center gap-1.5 text-sistemas-cyan hover:underline font-bold"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Descargar {targetVersion.nombre_archivo}</span>
@@ -183,37 +192,40 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
 
       {/* Metadatos de la Versión Evaluada */}
       {targetVersion && (
-        <div className="p-3 rounded-xl border bg-black/5 dark:bg-white/5 space-y-1 text-xs" style={{ borderColor: 'var(--border-color)' }}>
+        <div 
+          className="p-2.5 rounded-lg border space-y-1 text-xs" 
+          style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+        >
           <div className="flex items-center justify-between gap-2">
-            <span className="font-bold flex items-center gap-1.5">
-              <FileText className="w-4 h-4 text-primary" />
+            <span className="font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+              <FileText className="w-3.5 h-3.5 text-sistemas-cyan" />
               Versión #{targetVersion.numero_version}: {targetVersion.resumen_cambio || 'Entrega de documento'}
             </span>
-            <span className="opacity-60 text-[11px] flex items-center gap-1">
+            <span className="text-slate-400 text-[11px] flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
               {new Date(targetVersion.created_at).toLocaleString('es-BO')}
             </span>
           </div>
-          <div className="opacity-70 text-[11px] flex items-center gap-1">
-            <User className="w-3.5 h-3.5 opacity-60" />
-            <span>Publicado por: {targetVersion.usuario?.nombre_completo || 'Redactor'} (@{targetVersion.usuario?.username})</span>
+          <div className="text-slate-500 text-[11px] flex items-center gap-1">
+            <User className="w-3.5 h-3.5 text-slate-400" />
+            <span>Publicado por: <strong className="text-slate-700 dark:text-slate-300">{targetVersion.usuario?.nombre_completo || 'Redactor'}</strong> (@{targetVersion.usuario?.username})</span>
           </div>
         </div>
       )}
 
       {/* Si solo hay 1 versión: aviso informativo */}
       {sortedAsc.length === 1 && (
-        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2">
+        <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0 text-amber-500" />
           <span>
-            Se encuentra registrada únicamente la <strong>Versión 1 (Documento Inicial)</strong>. Cuando el equipo evaluador formule observaciones técnicas y se entregue la Versión 2 de subsanación, los cambios se remarcarán automáticamente en verde y rojo en este visualizador.
+            Registrada únicamente la <strong>Versión 1 (Documento Inicial)</strong>. Al registrar la versión 2 de subsanación, los cambios se remarcarán en verde y rojo automáticamente.
           </span>
         </div>
       )}
 
       {/* Visor Diff Unificado (Línea por Línea estilo GitHub) */}
       <div 
-        className="rounded-xl border overflow-x-auto font-mono text-xs flex-1 max-h-[60vh] overflow-y-auto"
+        className="rounded-lg border overflow-x-auto font-mono text-xs flex-1 max-h-[60vh] overflow-y-auto"
         style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
       >
         {diffResult && diffResult.lines.length > 0 ? (
@@ -224,33 +236,37 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
                 const isRemoved = line.type === 'removed';
 
                 const rowBg = isAdded
-                  ? 'bg-emerald-500/15 text-emerald-900 dark:text-emerald-200'
+                  ? (isDark ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-500/10 text-emerald-800')
                   : isRemoved
-                  ? 'bg-rose-500/15 text-rose-900 dark:text-rose-200'
-                  : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-90';
+                  ? (isDark ? 'bg-rose-500/15 text-rose-300' : 'bg-rose-500/10 text-rose-800')
+                  : (isDark ? 'hover:bg-slate-800/40 text-slate-200' : 'hover:bg-slate-100/50 text-slate-700');
 
                 const linePrefix = isAdded ? '+' : isRemoved ? '-' : ' ';
-                const prefixColor = isAdded ? 'text-emerald-600 font-bold' : isRemoved ? 'text-rose-600 font-bold' : 'opacity-30';
+                const prefixColor = isAdded 
+                  ? (isDark ? 'text-emerald-400 font-bold' : 'text-emerald-600 font-bold') 
+                  : isRemoved 
+                  ? (isDark ? 'text-rose-400 font-bold' : 'text-rose-600 font-bold') 
+                  : (isDark ? 'text-slate-500' : 'text-slate-400');
 
                 return (
-                  <tr key={`diff-line-${idx}`} className={`${rowBg} transition-colors border-b border-black/5 dark:border-white/5`}>
+                  <tr key={`diff-line-${idx}`} className={`${rowBg} transition-colors border-b ${isDark ? 'border-white/5' : 'border-black/5'}`}>
                     {/* Número de línea anterior */}
-                    <td className="w-12 px-2 py-0.5 text-right select-none opacity-40 text-[10px] border-r border-black/5 dark:border-white/5">
+                    <td className={`w-10 px-2 py-0.5 text-right select-none ${isDark ? 'text-slate-500 border-white/5' : 'text-slate-400 border-black/5'} text-[10px] border-r`}>
                       {line.oldLineNumber || ''}
                     </td>
 
                     {/* Número de línea nueva */}
-                    <td className="w-12 px-2 py-0.5 text-right select-none opacity-40 text-[10px] border-r border-black/5 dark:border-white/5">
+                    <td className={`w-10 px-2 py-0.5 text-right select-none ${isDark ? 'text-slate-500 border-white/5' : 'text-slate-400 border-black/5'} text-[10px] border-r`}>
                       {line.newLineNumber || ''}
                     </td>
 
                     {/* Símbolo + / - */}
-                    <td className={`w-6 px-1.5 py-0.5 text-center select-none ${prefixColor} text-xs`}>
+                    <td className={`w-5 px-1 py-0.5 text-center select-none ${prefixColor} text-xs font-mono`}>
                       {linePrefix}
                     </td>
 
                     {/* Contenido textual */}
-                    <td className={`px-2 py-0.5 whitespace-pre-wrap break-words text-[11px] leading-relaxed ${isRemoved ? 'line-through decoration-rose-500/60' : ''}`}>
+                    <td className={`px-2 py-0.5 whitespace-pre-wrap break-words text-[11px] leading-relaxed font-mono ${isRemoved ? (isDark ? 'line-through decoration-rose-400/70' : 'line-through decoration-rose-600/70') : ''}`}>
                       {line.content || ' '}
                     </td>
                   </tr>
@@ -259,8 +275,8 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
             </tbody>
           </table>
         ) : (
-          <div className="p-8 text-center text-xs opacity-50">
-            No se detectaron diferencias entre las versiones seleccionadas.
+          <div className="p-8 text-center text-xs text-slate-400">
+            No se detectaron diferencias textuales entre las versiones seleccionadas.
           </div>
         )}
       </div>

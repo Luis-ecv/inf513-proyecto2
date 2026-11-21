@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import type { Capitulo, DocumentoEvidencia, VersionCapitulo } from '../types';
@@ -55,7 +55,7 @@ export const ChapterDetail: React.FC = () => {
   const [showVincularModal, setShowVincularModal] = useState(false);
   const [vincularError, setVincularError] = useState('');
 
-  const fetchCapitulo = async () => {
+  const fetchCapitulo = useCallback(async () => {
     try {
       const res = await api.get(`/capitulos/${id}`);
       if (res.data.success) {
@@ -67,9 +67,9 @@ export const ChapterDetail: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const fetchEvidenciasDisponibles = async () => {
+  const fetchEvidenciasDisponibles = useCallback(async () => {
     try {
       const res = await api.get('/evidencias');
       if (res.data.success) {
@@ -78,9 +78,9 @@ export const ChapterDetail: React.FC = () => {
     } catch (err) {
       console.error('Error al cargar catálogo de evidencias:', err);
     }
-  };
+  }, []);
 
-  const fetchVersiones = async () => {
+  const fetchVersiones = useCallback(async () => {
     setLoadingVersiones(true);
     try {
       const res = await api.get(`/capitulos/${id}/versiones`);
@@ -92,13 +92,13 @@ export const ChapterDetail: React.FC = () => {
     } finally {
       setLoadingVersiones(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchCapitulo();
     fetchEvidenciasDisponibles();
     fetchVersiones();
-  }, [id]);
+  }, [fetchCapitulo, fetchEvidenciasDisponibles, fetchVersiones]);
 
   const handleFileChange = (file: File | null) => {
     setUploadError('');
@@ -134,12 +134,9 @@ export const ChapterDetail: React.FC = () => {
     setUploadProgressMsg('Extrayendo texto digital del documento...');
 
     try {
-      // 1. Extraer texto del documento en el cliente
       const extractedText = await extractTextFromFile(selectedFile);
-
       setUploadProgressMsg('Subiendo documento y registrando versión en el servidor...');
 
-      // 2. Preparar FormData para envío multipart
       const formData = new FormData();
       formData.append('archivo', selectedFile);
       formData.append('contenido_texto', extractedText);
@@ -148,9 +145,7 @@ export const ChapterDetail: React.FC = () => {
       }
 
       const res = await api.post(`/capitulos/${id}/versiones`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       if (res.data.success) {
@@ -170,7 +165,6 @@ export const ChapterDetail: React.FC = () => {
     }
   };
 
-  // Ejecutar transición formal en la Máquina de Estados
   const handleCambiarEstado = async (e: React.FormEvent) => {
     e.preventDefault();
     setTransError('');
@@ -200,7 +194,6 @@ export const ChapterDetail: React.FC = () => {
     }
   };
 
-  // Registrar observación técnica
   const handleCrearObservacion = async (e: React.FormEvent) => {
     e.preventDefault();
     setObsError('');
@@ -228,7 +221,6 @@ export const ChapterDetail: React.FC = () => {
     }
   };
 
-  // Subsanar observación técnica
   const handleSubsanarObservacion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subsanarId || !respuestaSubsanacion.trim()) return;
@@ -251,7 +243,6 @@ export const ChapterDetail: React.FC = () => {
     }
   };
 
-  // Vincular evidencia
   const handleVincularEvidencia = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDocId) return;
@@ -272,9 +263,8 @@ export const ChapterDetail: React.FC = () => {
     }
   };
 
-  // Desvincular evidencia
   const handleDesvincularEvidencia = async (docId: number) => {
-    if (!confirm('¿Desea desvincular este documento de evidencia del capítulo?')) return;
+    if (!confirm('¿Deseas desvincular este documento de evidencia del capítulo?')) return;
 
     try {
       const res = await api.post('/evidencias/desvincular-capitulo', {
@@ -294,26 +284,26 @@ export const ChapterDetail: React.FC = () => {
     switch (estadoNombre) {
       case 'Aprobado':
         return (
-          <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Aprobado
+          <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" /> Aprobado
           </span>
         );
       case 'En Revisión':
         return (
-          <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-            <Clock className="w-3.5 h-3.5" /> En Revisión
+          <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+            <span className="w-2 h-2 rounded-full bg-purple-500" /> En Revisión
           </span>
         );
       case 'Observado':
         return (
-          <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            <AlertTriangle className="w-3.5 h-3.5" /> Observado
+          <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+            <span className="w-2 h-2 rounded-full bg-amber-500" /> Observado
           </span>
         );
       default:
         return (
-          <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-            <FileEdit className="w-3.5 h-3.5" /> Borrador
+          <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+            <span className="w-2 h-2 rounded-full bg-blue-500" /> Borrador
           </span>
         );
     }
@@ -322,7 +312,10 @@ export const ChapterDetail: React.FC = () => {
   if (loading || !capitulo) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-sm opacity-60">Cargando datos del capítulo...</div>
+        <div className="text-xs font-semibold text-slate-400 animate-pulse flex items-center gap-2">
+          <Clock className="w-4 h-4 animate-spin text-sistemas-cyan" />
+          Cargando datos técnicos del capítulo...
+        </div>
       </div>
     );
   }
@@ -333,37 +326,37 @@ export const ChapterDetail: React.FC = () => {
   const historial = capitulo.historial || [];
 
   return (
-    <div className="space-y-6">
-      {/* Barra de Navegación y Encabezado del Capítulo */}
+    <div className="space-y-4">
+      {/* 1. Barra de Navegación y Encabezado del Capítulo */}
       <div 
-        className="p-6 rounded-2xl border shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+        className="p-5 rounded-xl border shadow-xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
       >
         <div className="flex items-start gap-3">
           <Link
-            to="/redisenio"
-            className="p-2 border rounded-lg hover:opacity-80 transition mt-1"
+            to="/capitulos"
+            className="p-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition mt-0.5 text-slate-700 dark:text-slate-300"
             style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
-            title="Volver al Rediseño"
+            title="Volver a Capítulos"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs px-2.5 py-0.5 rounded font-bold uppercase tracking-wider bg-blue-500/10 text-blue-500 border border-blue-500/20">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 font-mono">
                 Componente #{capitulo.componente?.numero}: {capitulo.componente?.nombre}
               </span>
-              <span className="text-xs opacity-60">Capítulo #{capitulo.numero}</span>
+              <span className="text-xs text-slate-400 font-medium font-mono">Capítulo #{capitulo.numero}</span>
             </div>
-            <h1 className="text-xl font-extrabold tracking-tight mt-1">
+            <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
               {capitulo.titulo}
             </h1>
-            <div className="flex items-center gap-2 mt-1 text-xs opacity-70">
-              <UserCheck className="w-3.5 h-3.5 text-blue-500" />
+            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <UserCheck className="w-3.5 h-3.5 text-sistemas-cyan" />
               <span>
-                Redactores: {capitulo.redactores && capitulo.redactores.length > 0
+                Redactores: <strong className="text-slate-700 dark:text-slate-300">{capitulo.redactores && capitulo.redactores.length > 0
                   ? capitulo.redactores.map(r => r.nombreCompleto).join(', ')
-                  : 'Sin redactor asignado'}
+                  : 'Sin redactor asignado'}</strong>
               </span>
             </div>
           </div>
@@ -375,27 +368,27 @@ export const ChapterDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Panel de Control de la Máquina de Estados (CU5, RF-06, RF-07, RF-10) */}
+      {/* 2. Panel de Control de la Máquina de Estados (CU5, RF-06, RF-07, RF-10) */}
       <div 
-        className="p-5 rounded-2xl border shadow-sm space-y-3"
+        className="p-4 rounded-xl border shadow-2xs space-y-3"
         style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
       >
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--primary)' }}>
-            <ShieldCheck className="w-4 h-4" /> Actualizar estado del capítulo
+        <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-color)' }}>
+          <h2 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-sistemas-cyan">
+            <ShieldCheck className="w-4 h-4" /> Transición Formal de Estado Curricular
           </h2>
-          <span className="text-[11px] opacity-60">El cambio quedará registrado</span>
+          <span className="text-[11px] text-slate-400">Auditoría criptográfica inmutable activa</span>
         </div>
 
         {transError && (
-          <div className="p-3 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center gap-2">
+          <div className="p-2.5 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{transError}</span>
           </div>
         )}
 
         {transSuccess && (
-          <div className="p-3 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900/60 dark:text-emerald-300 text-xs flex items-center gap-2">
+          <div className="p-2.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900/60 dark:text-emerald-300 text-xs flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{transSuccess}</span>
           </div>
@@ -403,11 +396,11 @@ export const ChapterDetail: React.FC = () => {
 
         <form onSubmit={handleCambiarEstado} className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
           <div>
-            <label className="block font-semibold mb-1">Nuevo Estado:</label>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nuevo Estado Destino:</label>
             <select
               value={nuevoEstadoId}
               onChange={(e) => setNuevoEstadoId(Number(e.target.value))}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
               style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
             >
               <option value={1}>1. Borrador (Redacción Inicial)</option>
@@ -418,13 +411,13 @@ export const ChapterDetail: React.FC = () => {
           </div>
 
           <div className="md:col-span-2">
-            <label className="block font-semibold mb-1">Motivo del cambio:</label>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Justificación Técnica del Cambio:</label>
             <input
               type="text"
               value={justificacion}
               onChange={(e) => setJustificacion(e.target.value)}
-              placeholder="Explica el motivo técnico del cambio de estado..."
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+              placeholder="Explica el motivo técnico o académico de la transición..."
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
               style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
               required
             />
@@ -434,8 +427,7 @@ export const ChapterDetail: React.FC = () => {
             <button
               type="submit"
               disabled={submittingTrans || nuevoEstadoId === capitulo.id_estado}
-              className="w-full py-2 px-3 rounded-lg font-bold shadow-sm transition disabled:opacity-40"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+              className="w-full py-2 px-3 rounded-lg font-bold shadow-xs transition disabled:opacity-40 bg-sky-500 hover:bg-sky-600 text-white"
             >
               {submittingTrans ? 'Validando...' : 'Aplicar Transición'}
             </button>
@@ -444,34 +436,40 @@ export const ChapterDetail: React.FC = () => {
 
         {/* Precondiciones para Aprobación */}
         {nuevoEstadoId === 4 && (
-          <div className="p-3 rounded-xl border text-[11px] grid grid-cols-1 sm:grid-cols-2 gap-2"
-            style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
-            <div className="flex items-center gap-1.5">
+          <div 
+            className="p-3 rounded-lg border text-[11px] grid grid-cols-1 sm:grid-cols-2 gap-2"
+            style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+          >
+            <div className="flex items-center gap-1.5 font-medium">
               {pendientesCount === 0 ? (
                 <Check className="w-4 h-4 text-emerald-500" />
               ) : (
                 <AlertCircle className="w-4 h-4 text-rose-500" />
               )}
-              <span>0 Observaciones pendientes ({pendientesCount} activas)</span>
+              <span className={pendientesCount === 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}>
+                0 Observaciones pendientes ({pendientesCount} activas)
+              </span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 font-medium">
               {evidencias.length > 0 ? (
                 <Check className="w-4 h-4 text-emerald-500" />
               ) : (
                 <AlertCircle className="w-4 h-4 text-rose-500" />
               )}
-              <span>Al menos 1 evidencia vinculada ({evidencias.length} adjuntas)</span>
+              <span className={evidencias.length > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}>
+                Al menos 1 evidencia vinculada ({evidencias.length} adjuntas)
+              </span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Pestañas de Navegación del Capítulo */}
-      <div className="flex items-center gap-2 border-b text-xs font-semibold" style={{ borderColor: 'var(--border-color)' }}>
+      {/* 3. Pestañas de Navegación del Capítulo */}
+      <div className="flex items-center gap-1 border-b text-xs font-semibold overflow-x-auto" style={{ borderColor: 'var(--border-color)' }}>
         <button
           onClick={() => setActiveTab('contenido')}
-          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-2 ${
-            activeTab === 'contenido' ? 'border-blue-500 text-blue-500 font-bold' : 'border-transparent opacity-60 hover:opacity-100'
+          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'contenido' ? 'border-sky-500 text-sky-600 dark:text-sky-400 font-bold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <FileEdit className="w-4 h-4" /> Texto del Capítulo
@@ -479,8 +477,8 @@ export const ChapterDetail: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('observaciones')}
-          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-2 relative ${
-            activeTab === 'observaciones' ? 'border-blue-500 text-blue-500 font-bold' : 'border-transparent opacity-60 hover:opacity-100'
+          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 relative ${
+            activeTab === 'observaciones' ? 'border-sky-500 text-sky-600 dark:text-sky-400 font-bold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <MessageSquare className="w-4 h-4" /> Observaciones Técnicas
@@ -493,8 +491,8 @@ export const ChapterDetail: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('evidencias')}
-          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-2 ${
-            activeTab === 'evidencias' ? 'border-blue-500 text-blue-500 font-bold' : 'border-transparent opacity-60 hover:opacity-100'
+          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'evidencias' ? 'border-sky-500 text-sky-600 dark:text-sky-400 font-bold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <Archive className="w-4 h-4" /> Evidencias Adjuntas ({evidencias.length})
@@ -502,8 +500,8 @@ export const ChapterDetail: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('historial')}
-          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-2 ${
-            activeTab === 'historial' ? 'border-blue-500 text-blue-500 font-bold' : 'border-transparent opacity-60 hover:opacity-100'
+          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'historial' ? 'border-sky-500 text-sky-600 dark:text-sky-400 font-bold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <History className="w-4 h-4" /> Auditoría Inmutable ({historial.length})
@@ -511,48 +509,51 @@ export const ChapterDetail: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('versiones')}
-          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-2 ${
-            activeTab === 'versiones' ? 'border-blue-500 text-blue-500 font-bold' : 'border-transparent opacity-60 hover:opacity-100'
+          className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'versiones' ? 'border-sky-500 text-sky-600 dark:text-sky-400 font-bold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          <GitCompare className="w-4 h-4 text-blue-500" /> Historial de Versiones (Diff)
+          <GitCompare className="w-4 h-4 text-sistemas-cyan" /> Historial de Versiones (Diff)
           {versiones.length > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold border border-blue-500/20">
+            <span className="px-1.5 py-0.2 rounded-full bg-sky-500/10 text-sistemas-cyan text-[10px] font-bold border border-sky-500/20 font-mono">
               v{versiones[0]?.numero_version}
             </span>
           )}
         </button>
       </div>
 
-      {/* Contenido según pestaña */}
+      {/* 4. Contenido según pestaña activa */}
       {activeTab === 'contenido' && (
         <div 
-          className="p-6 rounded-2xl border shadow-sm space-y-4"
+          className="p-5 rounded-xl border shadow-xs space-y-3"
           style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
         >
-          <h2 className="text-base font-bold">Contenido Redactado del Capítulo</h2>
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Contenido Redactado del Capítulo</h2>
           {capitulo.contenido ? (
-            <div className="prose dark:prose-invert max-w-none text-xs leading-relaxed whitespace-pre-wrap opacity-90">
+            <div className="prose dark:prose-invert max-w-none text-xs leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-slate-200 font-normal">
               {capitulo.contenido}
             </div>
           ) : (
-            <div className="text-center py-8 text-xs opacity-50 border border-dashed rounded-xl" style={{ borderColor: 'var(--border-color)' }}>
-              No se ha ingresado texto para este capítulo. Los delegados pueden redactar el borrador.
+            <div 
+              className="text-center py-8 text-xs text-slate-400 border border-dashed rounded-lg" 
+              style={{ borderColor: 'var(--border-color)' }}
+            >
+              No se ha redactado texto preliminar para este capítulo. Los redactores pueden subir documentos en la pestaña de versiones.
             </div>
           )}
         </div>
       )}
 
-      {/* Pestaña: Observaciones Técnicas (RF-08) */}
+      {/* Pestaña: Observaciones Técnicas */}
       {activeTab === 'observaciones' && (
         <div className="space-y-4">
-          {/* Formulario para que autoridades emitan observaciones */}
+          {/* Formulario de Emisión de Observaciones */}
           <div 
-            className="p-5 rounded-2xl border shadow-sm space-y-3"
+            className="p-4 rounded-xl border shadow-2xs space-y-3"
             style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
           >
-            <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--primary)' }}>
-              <MessageSquare className="w-4 h-4" /> Emitir Observación Técnica (Autoridades / Director)
+            <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-sistemas-cyan">
+              <MessageSquare className="w-4 h-4" /> Emitir Observación Técnica (Autoridades / Comité)
             </h3>
 
             {obsError && (
@@ -568,88 +569,90 @@ export const ChapterDetail: React.FC = () => {
                 value={nuevoComentario}
                 onChange={(e) => setNuevoComentario(e.target.value)}
                 placeholder="Escribe el señalamiento u observación técnica sobre este capítulo..."
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                 style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                 required
               />
-              <div className="flex justify-between items-center">
-                <span className="text-[11px] opacity-60">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-[11px] text-slate-500">
                   Al emitir la observación, el capítulo cambiará automáticamente al estado 'Observado'.
                 </span>
                 <button
                   type="submit"
                   disabled={submittingObs}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold shadow-sm transition disabled:opacity-50"
-                  style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold shadow-xs transition disabled:opacity-50 bg-sky-500 hover:bg-sky-600 text-white self-end sm:self-auto"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  {submittingObs ? 'Registrando...' : 'Registrar Observación'}
+                  <span>{submittingObs ? 'Registrando...' : 'Registrar Observación'}</span>
                 </button>
               </div>
             </form>
           </div>
 
           {/* Listado de Observaciones */}
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {observaciones.length === 0 ? (
-              <div className="p-8 text-center text-xs opacity-50 border border-dashed rounded-2xl" style={{ borderColor: 'var(--border-color)' }}>
+              <div 
+                className="p-8 text-center text-xs text-slate-400 border border-dashed rounded-xl" 
+                style={{ borderColor: 'var(--border-color)' }}
+              >
                 No existen observaciones registradas para este capítulo.
               </div>
             ) : (
               observaciones.map((obs) => (
                 <div 
                   key={obs.id}
-                  className="p-4 rounded-xl border shadow-xs space-y-3"
+                  className="p-3.5 rounded-xl border shadow-2xs space-y-2.5"
                   style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
                 >
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-xs border-b pb-2" style={{ borderColor: 'var(--border-color)' }}>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold">{obs.observador?.nombre_completo || 'Autoridad'}</span>
-                      <span className="opacity-50 text-[11px]">
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{obs.observador?.nombre_completo || 'Autoridad'}</span>
+                      <span className="text-slate-400 text-[11px]">
                         {new Date(obs.created_at).toLocaleDateString()}
                       </span>
                     </div>
 
                     {obs.resuelta ? (
-                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        <CheckCircle2 className="w-3 h-3" /> Subsanada
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Subsanada
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                        <AlertTriangle className="w-3 h-3" /> Pendiente
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                        <AlertTriangle className="w-3 h-3 text-amber-500" /> Pendiente
                       </span>
                     )}
                   </div>
 
-                  <p className="text-xs leading-relaxed opacity-90">{obs.comentario}</p>
+                  <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-200 font-medium">{obs.comentario}</p>
 
                   {/* Respuesta del Delegado */}
                   {obs.resuelta && obs.respuesta_delegado && (
                     <div 
-                      className="p-3 rounded-lg border text-xs space-y-1"
-                      style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                      className="p-2.5 rounded-lg border-l-3 border-l-emerald-500 text-xs text-slate-600 dark:text-slate-300"
+                      style={{ backgroundColor: 'var(--bg-app)' }}
                     >
-                      <div className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
+                      <div className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center justify-between mb-0.5">
                         <span>Respuesta de Subsanación:</span>
-                        <span className="text-[10px] opacity-60 font-normal">
+                        <span className="text-[10px] text-slate-400 font-normal">
                           {obs.fecha_respuesta ? new Date(obs.fecha_respuesta).toLocaleDateString() : ''}
                         </span>
                       </div>
-                      <p className="opacity-80">{obs.respuesta_delegado}</p>
+                      <p>{obs.respuesta_delegado}</p>
                     </div>
                   )}
 
-                  {/* Formulario de Subsanación Inline para Delegados */}
+                  {/* Formulario de Subsanación Inline */}
                   {!esInvitado && !obs.resuelta && (
-                    <div>
+                    <div className="pt-1">
                       {subsanarId === obs.id ? (
-                        <form onSubmit={handleSubsanarObservacion} className="mt-2 space-y-2 text-xs">
+                        <form onSubmit={handleSubsanarObservacion} className="space-y-2 text-xs">
                           <textarea
                             rows={2}
                             value={respuestaSubsanacion}
                             onChange={(e) => setRespuestaSubsanacion(e.target.value)}
                             placeholder="Detalla cómo fue corregida o subsanada técnicamente esta observación..."
-                            className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                             style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                             required
                           />
@@ -657,7 +660,7 @@ export const ChapterDetail: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setSubsanarId(null)}
-                              className="px-3 py-1.5 border rounded-lg"
+                              className="px-3 py-1.5 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold"
                               style={{ borderColor: 'var(--border-color)' }}
                             >
                               Cancelar
@@ -665,8 +668,7 @@ export const ChapterDetail: React.FC = () => {
                             <button
                               type="submit"
                               disabled={submittingSub}
-                              className="px-3 py-1.5 rounded-lg font-bold shadow-sm transition"
-                              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+                              className="px-3 py-1.5 rounded-lg font-bold shadow-xs transition bg-sky-500 hover:bg-sky-600 text-white"
                             >
                               {submittingSub ? 'Guardando...' : 'Confirmar Subsanación'}
                             </button>
@@ -678,7 +680,7 @@ export const ChapterDetail: React.FC = () => {
                             setSubsanarId(obs.id);
                             setRespuestaSubsanacion('');
                           }}
-                          className="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:opacity-80 transition"
+                          className="px-3 py-1 rounded-md border text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300"
                           style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
                         >
                           Responder / Subsanar Observación →
@@ -693,54 +695,57 @@ export const ChapterDetail: React.FC = () => {
         </div>
       )}
 
-      {/* Pestaña: Evidencias Normativas Adjuntas (RF-13) */}
+      {/* Pestaña: Evidencias Normativas Adjuntas */}
       {activeTab === 'evidencias' && (
         <div 
-          className="p-6 rounded-2xl border shadow-sm space-y-4"
+          className="p-5 rounded-xl border shadow-xs space-y-3.5"
           style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
         >
           <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: 'var(--border-color)' }}>
             <div>
-              <h2 className="text-sm font-bold flex items-center gap-2">
-                <Archive className="w-4 h-4 text-emerald-500" /> Documentos de Respaldo Vinculados
+              <h2 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-sistemas-cyan">
+                <Archive className="w-4 h-4" /> Documentos de Respaldo Vinculados
               </h2>
-              <p className="text-xs opacity-60 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Al menos un documento normativo es obligatorio para la aprobación formal del capítulo.
               </p>
             </div>
 
             <button
               onClick={() => setShowVincularModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs transition bg-sky-500 hover:bg-sky-600 text-white"
             >
-              <Paperclip className="w-3.5 h-3.5" /> Adjuntar Evidencia
+              <Paperclip className="w-3.5 h-3.5" />
+              <span>Adjuntar Evidencia</span>
             </button>
           </div>
 
           {evidencias.length === 0 ? (
-            <div className="text-center py-8 text-xs opacity-50 border border-dashed rounded-xl" style={{ borderColor: 'var(--border-color)' }}>
-              No hay documentos de evidencia vinculados a este capítulo.
+            <div 
+              className="text-center py-8 text-xs text-slate-400 border border-dashed rounded-lg" 
+              style={{ borderColor: 'var(--border-color)' }}
+            >
+              No hay documentos de evidencia vinculados a este capítulo todavía.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {evidencias.map((doc) => (
                 <div 
                   key={doc.id}
-                  className="p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs"
+                  className="p-3 rounded-lg border flex items-center justify-between gap-3 text-xs"
                   style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
                 >
                   <div className="min-w-0">
-                    <div className="font-bold text-blue-500 truncate">{doc.codigo_norma}</div>
-                    <div className="font-semibold truncate">{doc.titulo}</div>
-                    <div className="text-[10px] opacity-60 mt-0.5">
+                    <div className="font-mono font-bold text-sistemas-cyan truncate">{doc.codigo_norma}</div>
+                    <div className="font-semibold text-slate-800 dark:text-slate-100 truncate">{doc.titulo}</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
                       {doc.organo_emisor} • {doc.tipo_documento}
                     </div>
                   </div>
 
                   <button
                     onClick={() => handleDesvincularEvidencia(doc.id)}
-                    className="p-1.5 rounded-lg border text-rose-500 hover:bg-rose-500/10 transition shrink-0"
+                    className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition shrink-0"
                     style={{ borderColor: 'var(--border-color)' }}
                     title="Desvincular del capítulo"
                   >
@@ -753,33 +758,38 @@ export const ChapterDetail: React.FC = () => {
         </div>
       )}
 
-      {/* Pestaña: Pista de Auditoría Histórica Inmutable (RF-10) */}
+      {/* Pestaña: Pista de Auditoría Histórica Inmutable */}
       {activeTab === 'historial' && (
         <div 
-          className="p-6 rounded-2xl border shadow-sm space-y-4"
+          className="p-5 rounded-xl border shadow-xs space-y-3.5"
           style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
         >
-          <h2 className="text-sm font-bold flex items-center gap-2">
-            <History className="w-4 h-4 text-amber-500" /> Pista Histórica Inmutable de Modificaciones
-          </h2>
-          <p className="text-xs opacity-60">
-            Registro cronológico protegido de todas las transiciones de estado, justificaciones técnicas y usuarios responsables.
-          </p>
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-sistemas-cyan">
+              <History className="w-4 h-4" /> Pista Histórica Inmutable de Modificaciones
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Registro cronológico inmutable de transiciones de estado, justificaciones y responsables.
+            </p>
+          </div>
 
-          <div className="relative border-l ml-3 pl-4 space-y-4" style={{ borderColor: 'var(--border-color)' }}>
+          <div className="relative border-l ml-3 pl-4 space-y-3.5" style={{ borderColor: 'var(--border-color)' }}>
             {historial.map((item) => (
               <div key={item.id} className="relative text-xs space-y-1">
-                <span className="absolute -left-[23px] top-1 w-3 h-3 rounded-full bg-blue-500" />
+                <span className="absolute -left-[23px] top-1 w-2.5 h-2.5 rounded-full bg-sistemas-cyan border-2 border-white dark:border-slate-900" />
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-blue-500">{item.estado_anterior} ➔ {item.estado_nuevo}</span>
-                  <span className="opacity-50 text-[10px]">
+                  <span className="font-bold text-sistemas-cyan">{item.estado_anterior} ➔ {item.estado_nuevo}</span>
+                  <span className="text-slate-400 text-[10px]">
                     {new Date(item.fecha_hora).toLocaleString()}
                   </span>
                 </div>
-                <div className="opacity-70 font-medium">
-                  {item.descripcion_accion} • Responsable: <span className="font-semibold">{item.usuario?.nombre_completo || 'Usuario'}</span>
+                <div className="text-slate-600 dark:text-slate-300 font-medium">
+                  {item.descripcion_accion} • Responsable: <span className="font-semibold text-slate-800 dark:text-slate-100">{item.usuario?.nombre_completo || 'Usuario'}</span>
                 </div>
-                <div className="p-2.5 rounded-lg border italic opacity-90 text-[11px]" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
+                <div 
+                  className="p-2.5 rounded-lg border text-[11px] text-slate-600 dark:text-slate-300 italic" 
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                >
                   "{item.justificacion_tecnica}"
                 </div>
               </div>
@@ -788,49 +798,51 @@ export const ChapterDetail: React.FC = () => {
         </div>
       )}
 
-      {/* Pestaña: Historial de Versiones y Diff Visual (Git-Style) */}
+      {/* Pestaña: Historial de Versiones y Diff Visual */}
       {activeTab === 'versiones' && (
-        <div className="space-y-6">
-          {/* Zona de Carga / Entrega de Nueva Versión (Subsanación de Observaciones) */}
+        <div className="space-y-4">
+          {/* Zona de Carga / Entrega de Nueva Versión */}
           {!esInvitado && (
             <div 
-              className="p-5 rounded-2xl border shadow-sm space-y-4"
+              className="p-5 rounded-xl border shadow-xs space-y-3.5"
               style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2" style={{ borderColor: 'var(--border-color)' }}>
                 <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
-                    <UploadCloud className="w-5 h-5" />
+                  <div className="p-2 rounded-lg bg-sky-500/10 text-sistemas-cyan">
+                    <UploadCloud className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold">Publicar Nueva Versión del Documento</h3>
-                    <p className="text-xs opacity-60">
-                      Sube la versión corregida tras subsanar observaciones técnicas o redactar una nueva entrega.
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                      Publicar Nueva Versión del Documento
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Sube la versión corregida tras subsanar observaciones técnicas.
                     </p>
                   </div>
                 </div>
                 {versiones.length > 0 && (
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 font-semibold border border-emerald-500/20 self-start sm:self-auto">
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/20 font-mono">
                     Próxima versión: v{(versiones[0]?.numero_version || 0) + 1}
                   </span>
                 )}
               </div>
 
               {uploadError && (
-                <div className="p-3 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center gap-2">
+                <div className="p-2.5 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{uploadError}</span>
                 </div>
               )}
 
               {uploadSuccess && (
-                <div className="p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900/60 dark:text-emerald-300 text-xs flex items-center gap-2">
+                <div className="p-2.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900/60 dark:text-emerald-300 text-xs flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>{uploadSuccess}</span>
                 </div>
               )}
 
-              <form onSubmit={handleUploadNuevaVersion} className="space-y-4">
+              <form onSubmit={handleUploadNuevaVersion} className="space-y-3 text-xs">
                 {/* Zona Drag & Drop */}
                 <div
                   onDragOver={(e) => {
@@ -845,12 +857,12 @@ export const ChapterDetail: React.FC = () => {
                     if (file) handleFileChange(file);
                   }}
                   onClick={() => document.getElementById('chapter-version-file-input')?.click()}
-                  className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
+                  className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5 ${
                     isDragOver 
-                      ? 'border-blue-500 bg-blue-500/10' 
+                      ? 'border-sky-500 bg-sky-500/10' 
                       : selectedFile 
                       ? 'border-emerald-500/50 bg-emerald-500/5' 
-                      : 'border-neutral-300 dark:border-neutral-700 hover:border-blue-500/50'
+                      : 'border-slate-300 dark:border-slate-700 hover:border-sky-500/60'
                   }`}
                 >
                   <input
@@ -864,12 +876,12 @@ export const ChapterDetail: React.FC = () => {
 
                   {selectedFile ? (
                     <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
-                        <FileCheck2 className="w-6 h-6" />
+                      <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+                        <FileCheck2 className="w-5 h-5" />
                       </div>
                       <div className="text-left">
-                        <div className="font-bold text-xs">{selectedFile.name}</div>
-                        <div className="text-[11px] opacity-60">
+                        <div className="font-bold text-xs text-slate-800 dark:text-slate-100">{selectedFile.name}</div>
+                        <div className="text-[11px] text-slate-400">
                           {(selectedFile.size / 1024).toFixed(1)} KB • Formato: {selectedFile.name.split('.').pop()?.toUpperCase()}
                         </div>
                       </div>
@@ -879,7 +891,7 @@ export const ChapterDetail: React.FC = () => {
                           e.stopPropagation();
                           setSelectedFile(null);
                         }}
-                        className="ml-3 p-1.5 rounded-lg border text-rose-500 hover:bg-rose-500/10 transition"
+                        className="ml-3 p-1 rounded-md border text-rose-500 hover:bg-rose-500/10 transition"
                         style={{ borderColor: 'var(--border-color)' }}
                         title="Quitar archivo"
                       >
@@ -888,38 +900,38 @@ export const ChapterDetail: React.FC = () => {
                     </div>
                   ) : (
                     <>
-                      <UploadCloud className="w-8 h-8 opacity-40 text-blue-500" />
-                      <div className="text-xs font-semibold">
+                      <UploadCloud className="w-7 h-7 text-sistemas-cyan opacity-60" />
+                      <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
                         Arrastra y suelta tu archivo PDF o Markdown aquí, o haz clic para examinar
                       </div>
-                      <div className="text-[11px] opacity-50">
-                        Soporta archivos .pdf (documentos digitales), .md y .txt hasta 15 MB
+                      <div className="text-[11px] text-slate-400">
+                        Formatos soportados: .pdf, .md y .txt (hasta 15 MB)
                       </div>
                     </>
                   )}
                 </div>
 
-                {/* Justificación o resumen del cambio */}
+                {/* Motivo o resumen del cambio */}
                 <div>
-                  <label className="block text-xs font-semibold mb-1">
-                    Motivo o Justificación de la Subsanación / Entrega (opcional):
+                  <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">
+                    Motivo o Resumen de la Subsanación / Entrega (opcional):
                   </label>
                   <input
                     type="text"
                     value={resumenCambio}
                     onChange={(e) => setResumenCambio(e.target.value)}
-                    placeholder="Ej: Se subsanaron las observaciones del Comité incorporando el perfil de egreso corregido..."
-                    className="w-full px-3 py-2 text-xs border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Ej: Se subsanaron las observaciones del Comité corrigiendo el perfil de egreso..."
+                    className="w-full px-3 py-2 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                     disabled={uploadingVersion}
                   />
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
-                  <div className="text-[11px] opacity-60 flex items-center gap-1.5">
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
                     {uploadingVersion && (
                       <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-500" />
                         <span>{uploadProgressMsg}</span>
                       </>
                     )}
@@ -927,17 +939,16 @@ export const ChapterDetail: React.FC = () => {
                   <button
                     type="submit"
                     disabled={!selectedFile || uploadingVersion}
-                    className="px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+                    className="px-4 py-2 rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed bg-sky-500 hover:bg-sky-600 text-white"
                   >
                     {uploadingVersion ? (
                       <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                         <span>Procesando...</span>
                       </>
                     ) : (
                       <>
-                        <GitCompare className="w-4 h-4" />
+                        <GitCompare className="w-3.5 h-3.5" />
                         <span>Publicar Versión #{(versiones[0]?.numero_version || 0) + 1}</span>
                       </>
                     )}
@@ -949,9 +960,9 @@ export const ChapterDetail: React.FC = () => {
 
           {/* Componente Comparador Diff */}
           {loadingVersiones ? (
-            <div className="p-8 text-center text-xs opacity-60 flex items-center justify-center gap-2">
-              <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
-              <span>Cargando versiones y diferencias del capítulo...</span>
+            <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-sistemas-cyan" />
+              <span>Cargando versiones y diferencias textuales...</span>
             </div>
           ) : (
             <ChapterDiffViewer versiones={versiones} />
@@ -961,24 +972,24 @@ export const ChapterDetail: React.FC = () => {
 
       {/* Modal para Vincular Evidencia */}
       {showVincularModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div 
-            className="w-full max-w-md p-6 rounded-2xl border shadow-2xl relative"
+            className="w-full max-w-md p-6 rounded-xl border shadow-2xl relative"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
           >
             <button 
               onClick={() => setShowVincularModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:opacity-80 transition"
+              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               style={{ borderColor: 'var(--border-color)' }}
             >
               <X className="w-4 h-4" />
             </button>
 
-            <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <Paperclip className="w-4 h-4 text-blue-500" /> Vincular Evidencia Normativa
+            <h2 className="text-sm font-bold flex items-center gap-2 mb-1 text-slate-900 dark:text-white">
+              <Paperclip className="w-4 h-4 text-sky-500" /> Vincular Evidencia Normativa
             </h2>
-            <p className="text-xs opacity-60 mb-4">
-              Selecciona un documento o resolución del repositorio digital.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Selecciona una resolución o documento del repositorio digital de la carrera.
             </p>
 
             {vincularError && (
@@ -990,11 +1001,11 @@ export const ChapterDetail: React.FC = () => {
 
             <form onSubmit={handleVincularEvidencia} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold mb-1">Documento Normativo:</label>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Documento Normativo:</label>
                 <select
                   value={selectedDocId}
                   onChange={(e) => setSelectedDocId(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   required
                 >
@@ -1011,15 +1022,14 @@ export const ChapterDetail: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowVincularModal(false)}
-                  className="px-4 py-2 border rounded-lg hover:opacity-80 transition"
+                  className="px-4 py-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-slate-700 dark:text-slate-300"
                   style={{ borderColor: 'var(--border-color)' }}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg font-bold shadow-sm transition"
-                  style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+                  className="px-4 py-2 rounded-lg font-bold shadow-xs transition bg-sky-500 hover:bg-sky-600 text-white"
                 >
                   Vincular al Capítulo
                 </button>

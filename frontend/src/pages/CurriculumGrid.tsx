@@ -9,6 +9,16 @@ import { Link } from 'react-router-dom';
 import { getActivePlanId, setActivePlanId } from '../services/activePlan';
 import { useAuth } from '../context/AuthContext';
 
+const getAreaBorderClass = (area: string): string => {
+  const a = area.toLowerCase();
+  if (a.includes('prog') || a.includes('software')) return 'border-l-4 border-l-sky-500';
+  if (a.includes('base') || a.includes('datos') || a.includes('sist')) return 'border-l-4 border-l-emerald-500';
+  if (a.includes('mat') || a.includes('básic')) return 'border-l-4 border-l-blue-600';
+  if (a.includes('hard') || a.includes('red') || a.includes('telem')) return 'border-l-4 border-l-purple-500';
+  if (a.includes('gest') || a.includes('hum') || a.includes('proy')) return 'border-l-4 border-l-amber-500';
+  return 'border-l-4 border-l-slate-400';
+};
+
 export const CurriculumGrid: React.FC = () => {
   const { user } = useAuth();
   const esInvitado = user?.rol?.toLowerCase() === 'invitado';
@@ -33,6 +43,8 @@ export const CurriculumGrid: React.FC = () => {
   const [formAreaPersonalizada, setFormAreaPersonalizada] = useState('');
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Estado del modal de plan de estudio
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [planError, setPlanError] = useState('');
   const [savingPlan, setSavingPlan] = useState(false);
@@ -223,7 +235,10 @@ export const CurriculumGrid: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-sm opacity-60">Cargando malla curricular...</div>
+        <div className="text-xs font-semibold text-slate-400 animate-pulse flex items-center gap-2">
+          <BookOpen className="w-4 h-4 animate-spin text-sistemas-cyan" />
+          Cargando estructura de la malla curricular...
+        </div>
       </div>
     );
   }
@@ -238,29 +253,32 @@ export const CurriculumGrid: React.FC = () => {
   const semestres = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   return (
-    <div className="space-y-6">
-      {/* Cabecera del Plan de Estudios (RF-01) */}
-      <div className="p-6 rounded-2xl border shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
-        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}>
+    <div className="space-y-4">
+      {/* 1. Cabecera Institucional del Plan de Estudios */}
+      <div 
+        className="p-5 rounded-xl border shadow-xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
+      >
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-blue-500/10 text-blue-500 border border-blue-500/20">
-              {plan?.codigo} • Vigencia {plan?.anio_vigencia}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+              {plan?.codigo || 'PLAN-2026'} • Vigencia {plan?.anio_vigencia || '2026'}
             </span>
-            <span className="text-xs opacity-60">Plan de Estudios</span>
+            <span className="text-xs text-slate-400 font-medium">Malla Curricular Oficial</span>
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight mt-1">
-            {plan?.carrera}
+          <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+            {plan?.carrera || 'Ingeniería en Sistemas'}
           </h1>
-          <p className="text-xs mt-1 max-w-2xl" style={{ color: 'var(--text-muted)' }}>
-            {plan?.objetivos}
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+            {plan?.objetivos || 'Formación de profesionales de excelencia con competencias tecnológicas y científicas.'}
           </p>
         </div>
 
-        {/* Métricas de Créditos y Acciones */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Toolbar de Plan y Acciones */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Selector de Plan */}
           <div className="flex items-center gap-2">
-            <span className="text-xs opacity-60 font-semibold">Plan:</span>
+            <span className="text-xs text-slate-400 font-semibold">Plan:</span>
             <select
               value={selectedPlanId}
               onChange={(e) => {
@@ -268,7 +286,7 @@ export const CurriculumGrid: React.FC = () => {
                 setSelectedPlanId(idPlan);
                 setActivePlanId(idPlan);
               }}
-              className="max-w-[220px] px-3 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none"
+              className="max-w-[200px] px-2.5 py-2 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500"
               style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
             >
               {planes.map((item) => (
@@ -279,97 +297,107 @@ export const CurriculumGrid: React.FC = () => {
             </select>
           </div>
 
-          {!esInvitado && <button
-            onClick={() => {
-              setEditingPlanId(null);
-              setPlanCodigo('');
-              setPlanCarrera('');
-              setPlanAnio(new Date().getFullYear());
-              setPlanDescripcion('');
-              setPlanObjetivos('');
-              setPlanPerfil('');
-              setPlanCreditosMin(200);
-              setPlanCreditosMax(280);
-              setPlanError('');
-              setShowPlanModal(true);
-            }}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold hover:opacity-80 transition"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
-          >
-            <Plus className="w-4 h-4 text-emerald-500" />
-            <span>Nuevo Plan de Estudio</span>
-          </button>}
+          {!esInvitado && (
+            <>
+              <button
+                onClick={() => {
+                  setEditingPlanId(null);
+                  setPlanCodigo('');
+                  setPlanCarrera('');
+                  setPlanAnio(new Date().getFullYear());
+                  setPlanDescripcion('');
+                  setPlanObjetivos('');
+                  setPlanPerfil('');
+                  setPlanCreditosMin(200);
+                  setPlanCreditosMax(280);
+                  setPlanError('');
+                  setShowPlanModal(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300"
+                style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+              >
+                <Plus className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Nuevo Plan</span>
+              </button>
 
-          {!esInvitado && plan && (
-            <button
-              type="button"
-              onClick={abrirEdicionPlan}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold hover:opacity-80 transition"
-              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
-            >
-              <Pencil className="w-4 h-4 text-blue-500" />
-              <span>Editar Plan</span>
-            </button>
+              {plan && (
+                <button
+                  type="button"
+                  onClick={abrirEdicionPlan}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300"
+                  style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+                >
+                  <Pencil className="w-3.5 h-3.5 text-sky-500" />
+                  <span>Editar Plan</span>
+                </button>
+              )}
+            </>
           )}
 
-          <div className="px-3 py-2 rounded-xl border text-center" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
-            <div className="text-xs opacity-60">Créditos Acumulados</div>
-            <div className="text-lg font-bold text-blue-500">{totalCreditos} / {plan?.limite_creditos_max}</div>
-            <div className="text-[10px] opacity-70">Mínimo: {plan?.limite_creditos_min} credito</div>
+          {/* Contador de Créditos */}
+          <div 
+            className="px-3 py-1.5 rounded-lg border text-center" 
+            style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+          >
+            <div className="text-[10px] text-slate-400 font-semibold uppercase">Créditos</div>
+            <div className="text-sm font-bold text-sistemas-cyan leading-tight">
+              {totalCreditos} <span className="text-[11px] text-slate-400 font-normal">/ {plan?.limite_creditos_max}</span>
+            </div>
           </div>
 
           <Link
             to="/grafo"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold hover:opacity-80 transition"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
           >
-            <GitFork className="w-4 h-4 text-purple-500" />
-            <span>Ver Grafo de Prerrequisitos</span>
+            <GitFork className="w-3.5 h-3.5 text-sistemas-cyan" />
+            <span>Ver Grafo</span>
           </Link>
 
-          {!esInvitado && <button
-            onClick={() => {
-              setEditingAsignaturaId(null);
-              setFormSigla('');
-              setFormNombre('');
-              setFormSemestre(1);
-              setFormHT(4);
-              setFormHP(2);
-              setFormCreditos(5);
-              setFormArea('Programación');
-              setFormAreaPersonalizada('');
-              setFormError('');
-              setShowModal(true);
-            }}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition"
-            style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nueva Asignatura</span>
-          </button>}
+          {!esInvitado && (
+            <button
+              onClick={() => {
+                setEditingAsignaturaId(null);
+                setFormSigla('');
+                setFormNombre('');
+                setFormSemestre(1);
+                setFormHT(4);
+                setFormHP(2);
+                setFormCreditos(5);
+                setFormArea('Programación');
+                setFormAreaPersonalizada('');
+                setFormError('');
+                setShowModal(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold shadow-xs transition bg-sky-500 hover:bg-sky-600 text-white"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Nueva Asignatura</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Buscador de Asignaturas */}
+      {/* 2. Filtro y Contador en Línea */}
       <div className="flex items-center justify-between gap-4">
-        <div className="relative w-72">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 opacity-50" />
+        <div className="relative w-80">
+          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Filtrar por sigla, nombre o área..."
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border focus:outline-none transition"
+            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
             style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
           />
         </div>
-        <div className="text-xs opacity-60">
-          Mostrando {materiasFiltradas.length} de {asignaturas.length} asignaturas
+        <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          Mostrando <span className="font-bold text-slate-800 dark:text-slate-200">{materiasFiltradas.length}</span> de {asignaturas.length} asignaturas
         </div>
       </div>
 
-      {/* Cuadrícula Visual por Semestres (RF-04) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* 3. Cuadrícula Visual por Semestres (1 al 10) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5">
         {semestres.map((sem) => {
           const materiasSemestre = materiasFiltradas.filter(a => a.semestre === sem);
           const creditosSemestre = materiasSemestre.reduce((acc, curr) => acc + curr.creditos, 0);
@@ -377,70 +405,92 @@ export const CurriculumGrid: React.FC = () => {
           return (
             <div
               key={sem}
-              className="p-3.5 rounded-2xl border flex flex-col space-y-3 min-h-[300px]"
+              className="p-3 rounded-xl border flex flex-col space-y-2.5 min-h-[300px]"
               style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
             >
-              <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
-                <span className="font-bold text-xs">Semestre {sem}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded border opacity-70" style={{ borderColor: 'var(--border-color)' }}>
-                  {creditosSemestre} credito
+              <div 
+                className="flex items-center justify-between pb-2 border-b" 
+                style={{ borderColor: 'var(--border-color)' }}
+              >
+                <span className="font-bold text-xs text-slate-800 dark:text-slate-200">
+                  Semestre {sem}
+                </span>
+                <span 
+                  className="text-xs px-2 py-0.5 rounded font-mono font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80"
+                >
+                  {creditosSemestre} cr
                 </span>
               </div>
 
-              <div className="space-y-2.5 flex-1">
+              <div className="space-y-2 flex-1">
                 {materiasSemestre.length === 0 ? (
-                  <div className="text-center py-6 text-[11px] opacity-40 border border-dashed rounded-lg" style={{ borderColor: 'var(--border-color)' }}>
+                  <div 
+                    className="text-center py-6 text-xs text-slate-400 border border-dashed rounded-lg"
+                    style={{ borderColor: 'var(--border-color)' }}
+                  >
                     Sin materias
                   </div>
                 ) : (
                   materiasSemestre.map((asig) => (
                     <div
                       key={asig.id}
-                      className="p-3 rounded-xl border shadow-xs transition hover:scale-[1.02]"
+                      className={`p-2.5 rounded-lg border shadow-2xs transition hover:border-sky-400 ${getAreaBorderClass(asig.area_formativa)}`}
                       style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-extrabold text-xs text-blue-500">{asig.sigla}</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-semibold px-1 rounded border opacity-70" style={{ borderColor: 'var(--border-color)' }}>
-                            {asig.creditos} credito
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-mono font-bold text-xs text-sistemas-cyan">
+                          {asig.sigla}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span 
+                            className="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80"
+                          >
+                            {asig.creditos} cr
                           </span>
-                          {!esInvitado && <>
-                            <button
-                              type="button"
-                              onClick={() => abrirEdicionAsignatura(asig)}
-                              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10"
-                              title="Editar asignatura"
-                            >
-                              <Pencil className="w-3 h-3 text-blue-500" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => eliminarAsignatura(asig)}
-                              className="p-1 rounded hover:bg-rose-500/10"
-                              title="Eliminar asignatura"
-                            >
-                              <Trash2 className="w-3 h-3 text-rose-500" />
-                            </button>
-                          </>}
+                          {!esInvitado && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => abrirEdicionAsignatura(asig)}
+                                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-sky-500 transition cursor-pointer"
+                                title="Editar asignatura"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => eliminarAsignatura(asig)}
+                                className="p-1 rounded hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition cursor-pointer"
+                                title="Eliminar asignatura"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
-                      <div className="font-semibold text-xs leading-snug line-clamp-2">
+
+                      <div className="font-semibold text-xs leading-snug line-clamp-2 text-slate-800 dark:text-slate-100" title={asig.nombre}>
                         {asig.nombre}
                       </div>
 
-                      <div className="flex items-center justify-between mt-2 pt-1 border-t text-[10px] opacity-60" style={{ borderColor: 'var(--border-color)' }}>
+                      <div 
+                        className="flex items-center justify-between mt-2 pt-1.5 border-t text-[11px] text-slate-500 dark:text-slate-400 font-medium" 
+                        style={{ borderColor: 'var(--border-color)' }}
+                      >
                         <span>HT: {asig.horas_teoricas}h | HP: {asig.horas_practicas}h</span>
-                        <span className="truncate max-w-[80px]">{asig.area_formativa}</span>
+                        <span className="truncate max-w-[95px] text-right font-medium" title={asig.area_formativa}>
+                          {asig.area_formativa}
+                        </span>
                       </div>
 
-                      {/* Prerrequisitos */}
+                      {/* Prerrequisitos de la materia */}
                       {asig.prerrequisitos && asig.prerrequisitos.length > 0 && (
                         <div className="mt-1.5 flex flex-wrap gap-1">
                           {asig.prerrequisitos.map((pre) => (
                             <span 
                               key={pre.id}
-                              className="text-[9px] px-1 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                              className="text-[11px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-mono font-medium"
                             >
                               Req: {pre.sigla}
                             </span>
@@ -456,20 +506,26 @@ export const CurriculumGrid: React.FC = () => {
         })}
       </div>
 
-      {/* Modal de Registro de Nueva Asignatura (RF-02) */}
+      {/* 4. Modal de Plan de Estudio */}
       {showPlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl border shadow-2xl relative"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}>
-            <button onClick={() => setShowPlanModal(false)} className="absolute top-4 right-4 p-1.5 rounded-lg border hover:opacity-80 transition" style={{ borderColor: 'var(--border-color)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div 
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-xl border shadow-2xl relative"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
+          >
+            <button 
+              onClick={() => setShowPlanModal(false)} 
+              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition" 
+              style={{ borderColor: 'var(--border-color)' }}
+            >
               <X className="w-4 h-4" />
             </button>
 
-            <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <BookOpen className="w-4 h-4 text-emerald-500" /> {editingPlanId ? 'Editar plan de estudio' : 'Registrar nuevo plan de estudio'}
+            <h2 className="text-sm font-bold flex items-center gap-2 mb-1 text-slate-900 dark:text-white">
+              <BookOpen className="w-4 h-4 text-emerald-500" /> {editingPlanId ? 'Editar Plan de Estudio' : 'Registrar Nuevo Plan de Estudio'}
             </h2>
-            <p className="text-xs opacity-60 mb-4">
-              {editingPlanId ? 'Actualiza los datos generales del plan seleccionado.' : 'El plan se creará en estado “En Elaboración” y podrá completarse con sus asignaturas.'}
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              {editingPlanId ? 'Actualiza los parámetros del plan curricular.' : 'El plan se registrará en estado "En Elaboración" para vincularle materias.'}
             </p>
 
             {planError && (
@@ -482,49 +538,118 @@ export const CurriculumGrid: React.FC = () => {
             <form onSubmit={handleGuardarPlan} className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1">Código:</label>
-                  <input value={planCodigo} onChange={(e) => setPlanCodigo(e.target.value)} placeholder="ej: PLAN-2027" className="w-full px-3 py-2 border rounded-lg focus:outline-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Código Oficial:</label>
+                  <input 
+                    value={planCodigo} 
+                    onChange={(e) => setPlanCodigo(e.target.value)} 
+                    placeholder="ej: PLAN-2027" 
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 uppercase font-mono" 
+                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} 
+                    required 
+                  />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Año de vigencia:</label>
-                  <input type="number" min="1990" value={planAnio} onChange={(e) => setPlanAnio(Number(e.target.value))} className="w-full px-3 py-2 border rounded-lg focus:outline-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Año de Vigencia:</label>
+                  <input 
+                    type="number" 
+                    min="1990" 
+                    value={planAnio} 
+                    onChange={(e) => setPlanAnio(Number(e.target.value))} 
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium" 
+                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} 
+                    required 
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Carrera:</label>
-                <input value={planCarrera} onChange={(e) => setPlanCarrera(e.target.value)} placeholder="Nombre de la carrera" className="w-full px-3 py-2 border rounded-lg focus:outline-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Carrera Universitaria:</label>
+                <input 
+                  value={planCarrera} 
+                  onChange={(e) => setPlanCarrera(e.target.value)} 
+                  placeholder="ej: Ingeniería en Sistemas" 
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium" 
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} 
+                  required 
+                />
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Descripción:</label>
-                <textarea value={planDescripcion} onChange={(e) => setPlanDescripcion(e.target.value)} rows={2} className="w-full px-3 py-2 border rounded-lg focus:outline-none resize-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} />
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Descripción General:</label>
+                <textarea 
+                  value={planDescripcion} 
+                  onChange={(e) => setPlanDescripcion(e.target.value)} 
+                  rows={2} 
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-medium" 
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} 
+                />
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Objetivos:</label>
-                <textarea value={planObjetivos} onChange={(e) => setPlanObjetivos(e.target.value)} rows={3} className="w-full px-3 py-2 border rounded-lg focus:outline-none resize-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Objetivos Formativos:</label>
+                <textarea 
+                  value={planObjetivos} 
+                  onChange={(e) => setPlanObjetivos(e.target.value)} 
+                  rows={3} 
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-medium" 
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} 
+                  required 
+                />
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Perfil de egreso:</label>
-                <textarea value={planPerfil} onChange={(e) => setPlanPerfil(e.target.value)} rows={3} className="w-full px-3 py-2 border rounded-lg focus:outline-none resize-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Perfil de Egreso:</label>
+                <textarea 
+                  value={planPerfil} 
+                  onChange={(e) => setPlanPerfil(e.target.value)} 
+                  rows={3} 
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-medium" 
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} 
+                  required 
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1">Créditos mínimos:</label>
-                  <input type="number" min="150" value={planCreditosMin} onChange={(e) => setPlanCreditosMin(Number(e.target.value))} className="w-full px-3 py-2 border rounded-lg focus:outline-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Créditos Mínimos:</label>
+                  <input 
+                    type="number" 
+                    min="150" 
+                    value={planCreditosMin} 
+                    onChange={(e) => setPlanCreditosMin(Number(e.target.value))} 
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium" 
+                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} 
+                    required 
+                  />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Créditos máximos:</label>
-                  <input type="number" min={planCreditosMin} value={planCreditosMax} onChange={(e) => setPlanCreditosMax(Number(e.target.value))} className="w-full px-3 py-2 border rounded-lg focus:outline-none" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} required />
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Créditos Máximos:</label>
+                  <input 
+                    type="number" 
+                    min={planCreditosMin} 
+                    value={planCreditosMax} 
+                    onChange={(e) => setPlanCreditosMax(Number(e.target.value))} 
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium" 
+                    style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }} 
+                    required 
+                  />
                 </div>
               </div>
 
               <div className="pt-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border-color)' }}>
-                <button type="button" onClick={() => setShowPlanModal(false)} className="px-4 py-2 border rounded-lg hover:opacity-80 transition" style={{ borderColor: 'var(--border-color)' }}>Cancelar</button>
-                <button type="submit" disabled={savingPlan} className="px-4 py-2 rounded-lg font-bold shadow-sm transition disabled:opacity-50" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowPlanModal(false)} 
+                  className="px-4 py-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-slate-700 dark:text-slate-300" 
+                  style={{ borderColor: 'var(--border-color)' }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={savingPlan} 
+                  className="px-4 py-2 rounded-lg font-bold shadow-xs transition disabled:opacity-50 bg-sky-500 hover:bg-sky-600 text-white"
+                >
                   {savingPlan ? 'Guardando...' : editingPlanId ? 'Actualizar Plan' : 'Guardar Plan'}
                 </button>
               </div>
@@ -533,11 +658,11 @@ export const CurriculumGrid: React.FC = () => {
         </div>
       )}
 
-      {/* Modal de Registro de Nueva Asignatura (RF-02) */}
+      {/* 5. Modal de Registro y Edición de Asignaturas */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div 
-            className="w-full max-w-lg p-6 rounded-2xl border shadow-2xl relative"
+            className="w-full max-w-lg p-6 rounded-xl border shadow-2xl relative"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
           >
             <button 
@@ -545,17 +670,17 @@ export const CurriculumGrid: React.FC = () => {
                 setEditingAsignaturaId(null);
                 setShowModal(false);
               }}
-              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:opacity-80 transition"
+              className="absolute top-4 right-4 p-1.5 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               style={{ borderColor: 'var(--border-color)' }}
             >
               <X className="w-4 h-4" />
             </button>
 
-            <h2 className="text-base font-bold flex items-center gap-2 mb-1">
-              <BookOpen className="w-4 h-4 text-blue-500" /> {editingAsignaturaId ? 'Editar Asignatura' : 'Registrar Nueva Asignatura'}
+            <h2 className="text-sm font-bold flex items-center gap-2 mb-1 text-slate-900 dark:text-white">
+              <BookOpen className="w-4 h-4 text-sky-500" /> {editingAsignaturaId ? 'Editar Asignatura' : 'Registrar Nueva Asignatura'}
             </h2>
-            <p className="text-xs opacity-60 mb-4">
-              La materia será vinculada al plan curricular activo con cálculo automático de carga horaria.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              La materia será integrada al plan curricular con cálculo automático de horas y créditos.
             </p>
 
             {formError && (
@@ -568,23 +693,23 @@ export const CurriculumGrid: React.FC = () => {
             <form onSubmit={handleCrearAsignatura} className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1">Sigla de la Materia:</label>
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Sigla Oficial:</label>
                   <input
                     type="text"
                     value={formSigla}
                     onChange={(e) => setFormSigla(e.target.value)}
                     placeholder="ej: INF412"
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none uppercase"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 uppercase font-mono font-bold"
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Semestre (1 al 10):</label>
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Semestre Asignado:</label>
                   <select
                     value={formSemestre}
                     onChange={(e) => setFormSemestre(Number(e.target.value))}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
@@ -595,13 +720,13 @@ export const CurriculumGrid: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Nombre Completo de la Materia:</label>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nombre de la Materia:</label>
                 <input
                   type="text"
                   value={formNombre}
                   onChange={(e) => setFormNombre(e.target.value)}
                   placeholder="ej: Inteligencia Artificial"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   required
                 />
@@ -609,42 +734,42 @@ export const CurriculumGrid: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1">Horas Teóricas:</label>
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Horas Teóricas:</label>
                   <input
                     type="number"
                     min="0"
                     value={formHT}
                     onChange={(e) => setFormHT(Number(e.target.value))}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Horas Prácticas:</label>
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Horas Prácticas:</label>
                   <input
                     type="number"
                     min="0"
                     value={formHP}
                     onChange={(e) => setFormHP(Number(e.target.value))}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Créditos:</label>
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Créditos:</label>
                   <input
                     type="number"
                     min="1"
                     value={formCreditos}
                     onChange={(e) => setFormCreditos(Number(e.target.value))}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Área Formativa:</label>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Área Formativa:</label>
                 <select
                   value={formArea}
                   onChange={(e) => {
@@ -653,7 +778,7 @@ export const CurriculumGrid: React.FC = () => {
                       setFormAreaPersonalizada('');
                     }
                   }}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                 >
                   <option value="Programación">Programación e Ingeniería de Software</option>
@@ -671,7 +796,7 @@ export const CurriculumGrid: React.FC = () => {
                     onChange={(e) => setFormAreaPersonalizada(e.target.value)}
                     placeholder="Escribe la nueva área formativa"
                     maxLength={80}
-                    className="w-full px-3 py-2 mt-2 border rounded-lg focus:outline-none"
+                    className="w-full px-3 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   />
                 )}
@@ -684,7 +809,7 @@ export const CurriculumGrid: React.FC = () => {
                     setEditingAsignaturaId(null);
                     setShowModal(false);
                   }}
-                  className="px-4 py-2 border rounded-lg hover:opacity-80 transition"
+                  className="px-4 py-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-slate-700 dark:text-slate-300"
                   style={{ borderColor: 'var(--border-color)' }}
                 >
                   Cancelar
@@ -692,8 +817,7 @@ export const CurriculumGrid: React.FC = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg font-bold shadow-sm transition disabled:opacity-50"
-                  style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}
+                  className="px-4 py-2 rounded-lg font-bold shadow-xs transition disabled:opacity-50 bg-sky-500 hover:bg-sky-600 text-white"
                 >
                   {saving ? 'Guardando...' : editingAsignaturaId ? 'Actualizar Asignatura' : 'Guardar Asignatura'}
                 </button>

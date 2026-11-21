@@ -6,12 +6,11 @@ import { Eye } from 'lucide-react';
 export const Footer: React.FC = () => {
   const location = useLocation();
   const [visitas, setVisitas] = useState<number | null>(null);
-  const [cargando, setCargando] = useState<boolean>(true);
+  const [cargando, setCargando] = useState<boolean>(false);
 
   // Registro dinámico del contador de visitas por página (Requisito 7)
   useEffect(() => {
     let isMounted = true;
-    setCargando(true);
 
     const registrarVisitaPagina = async () => {
       try {
@@ -38,7 +37,7 @@ export const Footer: React.FC = () => {
 
   return (
     <footer
-      className="border-t py-4 px-6 flex flex-col sm:flex-row items-center justify-between text-xs gap-3 transition-colors"
+      className="border-t py-3 px-6 flex flex-col sm:flex-row items-center justify-between text-xs gap-3 transition-colors shrink-0"
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--border-color)',
@@ -46,26 +45,26 @@ export const Footer: React.FC = () => {
       }}
     >
       {/* Información Institucional */}
-      <div className="flex items-center gap-2">
-        <span className="font-semibold" style={{ color: 'var(--text-main)' }}>
+      <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+        <span className="font-semibold text-slate-700 dark:text-slate-200">
           INF-513 Tecnología Web
         </span>
         <span>•</span>
-        <span>Seguimiento al Diseño Curricular - Ingeniería en Sistemas (UAGRM)</span>
+        <span>Seguimiento al Diseño Curricular • Ingeniería en Sistemas (FICCT - UAGRM)</span>
       </div>
 
       {/* Contador de Visitas por Página (Requisito 7) */}
       <div
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm font-medium transition"
+        className="flex items-center gap-2 px-3 py-1 rounded-full border shadow-2xs text-[11px] font-medium transition"
         style={{
           backgroundColor: 'var(--bg-app)',
           borderColor: 'var(--border-color)',
           color: 'var(--text-main)',
         }}
       >
-        <Eye className="w-3.5 h-3.5 text-blue-500" />
-        <span>Visitas en esta página:</span>
-        <span className="font-bold text-amber-500">
+        <Eye className="w-3.5 h-3.5 text-sistemas-cyan" />
+        <span className="text-slate-500 dark:text-slate-400">Visitas en esta ruta:</span>
+        <span className="font-bold text-sistemas-cyan">
           {cargando ? '...' : visitas !== null ? visitas.toLocaleString() : '1'}
         </span>
       </div>

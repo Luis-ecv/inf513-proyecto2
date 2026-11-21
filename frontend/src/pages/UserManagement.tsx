@@ -95,14 +95,13 @@ export const UserManagement: React.FC = () => {
     setFormError('');
     setFormSuccess('');
 
-    // Validación preventiva en frontend con mensajes claros en español
     if (!nombreCompleto.trim() || !email.trim() || !username.trim()) {
       setFormError('Todos los campos son obligatorios.');
       return;
     }
 
     if (!isPasswordValid) {
-      setFormError('La contraseña no cumple con la política de seguridad (8-25 caracteres, al menos una mayúscula, una minúscula, un número y un símbolo permitido).');
+      setFormError('La contraseña no cumple con la política de seguridad (8-25 caracteres, mayúscula, minúscula, número y símbolo).');
       return;
     }
 
@@ -126,7 +125,6 @@ export const UserManagement: React.FC = () => {
 
       if (res.data.success) {
         setFormSuccess('Usuario registrado exitosamente.');
-        // Limpiar formulario
         setNombreCompleto('');
         setEmail('');
         setUsername('');
@@ -155,12 +153,12 @@ export const UserManagement: React.FC = () => {
   const getRolBadgeColor = (rolId: number) => {
     switch (rolId) {
       case 1: // Director
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-300';
+        return 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30';
       case 2: // Delegado
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-300';
+        return 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30';
       case 3: // Invitado
       default:
-        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300';
+        return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30';
     }
   };
 
@@ -215,28 +213,40 @@ export const UserManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Encabezado */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-4">
+      {/* 1. Encabezado */}
+      <div 
+        className="p-5 rounded-xl border shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
+      >
         <div>
-          <div className="flex items-center gap-2">
-            <Users className="w-7 h-7 text-primary" />
-            <h1 className="text-2xl font-bold">Gestión de Usuarios y Roles</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+              Módulo 5 • Administración y Seguridad
+            </span>
+            <span className="text-xs text-slate-400 font-medium">Control de Accesos RBAC</span>
           </div>
+          <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            <Users className="w-5 h-5 text-sistemas-cyan" />
+            Gestión de Usuarios y Roles
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Administración del cuerpo docente, comisiones curriculares y restablecimiento de claves temporales (ADR-006).
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={cargarDatos}
-            className="p-2 rounded-lg border hover:opacity-80 transition-opacity"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+            className="p-2 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-slate-600 dark:text-slate-300"
+            style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
             title="Recargar usuarios"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-sistemas-cyan' : ''}`} />
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:opacity-90 shadow-sm"
+            className="flex items-center gap-2 px-3.5 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             Nuevo Usuario
@@ -244,24 +254,29 @@ export const UserManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid de Usuarios Registrados */}
+      {/* 2. Grid de Usuarios Registrados */}
       {loading ? (
-        <div className="p-12 text-center text-xs opacity-60">Cargando catálogo de usuarios...</div>
+        <div className="p-12 text-center text-xs text-slate-400 animate-pulse flex items-center justify-center gap-2">
+          <RefreshCw className="w-4 h-4 animate-spin text-sistemas-cyan" />
+          Cargando catálogo institucional de usuarios...
+        </div>
       ) : usuarios.length === 0 ? (
-        <div className="p-12 text-center text-xs opacity-60">No hay usuarios registrados.</div>
+        <div className="p-12 text-center text-xs text-slate-400">
+          No hay usuarios registrados en el sistema.
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {usuarios.map((u) => {
             const hasFoto = u.foto_ruta && !u.foto_ruta.includes('default.png') && !imageErrors[u.id];
             const fotoUrl = hasFoto ? `/storage/${u.foto_ruta}` : null;
             return (
               <div
                 key={u.id}
-                className="p-5 rounded-2xl border flex items-start gap-4 transition-all hover:shadow-md"
-                style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+                className="p-4 rounded-xl border shadow-xs flex items-start gap-3.5 transition-all hover:border-slate-400 dark:hover:border-slate-600"
+                style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
               >
                 {/* Foto / Avatar */}
-                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary/20 flex-shrink-0 bg-black/5 dark:bg-white/5 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                   {fotoUrl ? (
                     <img
                       src={fotoUrl}
@@ -272,64 +287,60 @@ export const UserManagement: React.FC = () => {
                       }}
                     />
                   ) : (
-                    <UserIcon className="w-7 h-7 opacity-40" />
+                    <UserIcon className="w-6 h-6 text-slate-400" />
                   )}
                 </div>
 
                 {/* Datos del Usuario */}
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-1">
-                    <h3 className="font-bold text-sm truncate" title={u.nombre_completo}>
+                    <h3 className="font-bold text-xs text-slate-900 dark:text-white truncate" title={u.nombre_completo}>
                       {u.nombre_completo}
                     </h3>
                   </div>
 
-                  <div className="text-xs opacity-60 flex items-center gap-1 font-mono truncate">
+                  <div className="text-[11px] text-slate-400 font-mono truncate">
                     <span>@{u.username}</span>
                   </div>
 
-                  <div className="text-xs opacity-60 flex items-center gap-1.5 truncate">
-                    <Mail className="w-3.5 h-3.5 flex-shrink-0 opacity-40" />
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 truncate">
+                    <Mail className="w-3 h-3 flex-shrink-0 opacity-60" />
                     <span className="truncate">{u.email}</span>
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${getRolBadgeColor(u.id_rol)}`}>
+                  <div className="pt-1.5 flex items-center justify-between">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getRolBadgeColor(u.id_rol)}`}>
                       <Shield className="w-3 h-3" />
                       {u.rol?.nombre || 'Usuario'}
                     </span>
-                    <span className="text-[10px] opacity-40">
-                      ID #{u.id}
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      #{u.id}
                     </span>
                   </div>
 
                   {/* Alerta de cambio obligatorio pendiente */}
                   {u.debe_cambiar_password && (
-                    <div className="mt-2 px-2 py-1 rounded-lg text-[10px] font-semibold bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <div className="mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 flex items-center gap-1">
                       <KeyRound className="w-3 h-3 shrink-0" />
-                      <span>Cambio de contraseña pendiente</span>
+                      <span>Clave temporal pendiente</span>
                     </div>
                   )}
 
                   {/* Botón de acción para el Director */}
-                  <div className="pt-2.5 mt-2.5 border-t flex items-center justify-end" style={{ borderColor: 'var(--border-color)' }}>
+                  <div className="pt-2 mt-2 border-t flex items-center justify-end" style={{ borderColor: 'var(--border-color)' }}>
                     {u.id === currentUser?.id ? (
-                      <span className="text-[10px] opacity-50 italic">
-                        Su cuenta (use Editar Perfil)
+                      <span className="text-[10px] text-slate-400 italic">
+                        Su cuenta
                       </span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => handleAbrirResetModal(u)}
-                        className="px-2.5 py-1 rounded-lg text-xs font-semibold border flex items-center gap-1.5 transition hover:opacity-80"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--bg-app)',
-                          color: 'var(--text-main)',
-                        }}
+                        className="px-2.5 py-1 rounded-md text-[11px] font-semibold border flex items-center gap-1.5 transition hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-slate-700 dark:text-slate-300"
+                        style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
                         title={`Restablecer contraseña para ${u.nombre_completo}`}
                       >
-                        <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+                        <KeyRound className="w-3 h-3 text-amber-500" />
                         <span>Restablecer</span>
                       </button>
                     )}
@@ -341,60 +352,62 @@ export const UserManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Modal para Crear Usuario */}
+      {/* 3. Modal para Crear Usuario */}
       {showModal && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div
-            className="w-full max-w-lg rounded-2xl border shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+            className="w-full max-w-lg rounded-xl border shadow-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+            style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
           >
             <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
               <div className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-primary" />
-                <h3 className="font-bold text-base">Registrar Nuevo Usuario Académico</h3>
+                <UserPlus className="w-4 h-4 text-sistemas-cyan" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Registrar Nuevo Usuario Académico</h3>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer"
               >
-                <X className="w-5 h-5 opacity-60" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {formError && (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{formError}</span>
               </div>
             )}
 
             {formSuccess && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                 <span>{formSuccess}</span>
               </div>
             )}
 
-            <form onSubmit={handleCrearUsuario} className="space-y-4 text-xs">
+            <form onSubmit={handleCrearUsuario} className="space-y-3.5 text-xs">
               {/* Carga de Fotografía */}
-              <div className="flex items-center gap-4 p-3 rounded-xl border border-dashed"
-                style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}>
-                <div className="w-16 h-16 rounded-full overflow-hidden border bg-black/5 dark:bg-white/5 flex items-center justify-center flex-shrink-0">
+              <div 
+                className="flex items-center gap-3.5 p-3 rounded-lg border border-dashed"
+                style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+              >
+                <div className="w-14 h-14 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
                   {fotoPreview ? (
                     <img src={fotoPreview} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
-                    <Camera className="w-6 h-6 opacity-40" />
+                    <Camera className="w-5 h-5 text-slate-400" />
                   )}
                 </div>
                 <div className="space-y-1">
-                  <label className="block font-semibold">Fotografía de Perfil (Opcional)</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300">Fotografía de Perfil (Opcional)</label>
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
                     onChange={handleFotoChange}
-                    className="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-primary file:text-white hover:file:opacity-80 cursor-pointer"
+                    className="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-sky-500 file:text-white hover:file:bg-sky-600 cursor-pointer"
                   />
-                  <span className="text-[10px] opacity-50 block">Formatos: JPG, PNG, WebP (máx. 2MB).</span>
+                  <span className="text-[10px] text-slate-400 block">Formatos: JPG, PNG, WebP (máx. 2MB).</span>
                   {fotoPreview && (
                     <button
                       type="button"
@@ -402,7 +415,7 @@ export const UserManagement: React.FC = () => {
                         setFotoFile(null);
                         setFotoPreview(null);
                       }}
-                      className="text-[10px] text-rose-500 hover:underline block pt-0.5"
+                      className="text-[10px] text-rose-500 hover:underline block pt-0.5 cursor-pointer"
                     >
                       Quitar fotografía seleccionada
                     </button>
@@ -412,13 +425,13 @@ export const UserManagement: React.FC = () => {
 
               {/* Nombre Completo */}
               <div>
-                <label className="block font-semibold mb-1">Nombre Completo *</label>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nombre Completo *</label>
                 <input
                   type="text"
                   value={nombreCompleto}
                   onChange={(e) => setNombreCompleto(e.target.value)}
                   placeholder="Ej. Ing. Evans Balcázar Veizaga"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                   required
                 />
@@ -427,25 +440,25 @@ export const UserManagement: React.FC = () => {
               {/* Correo y Nombre de Usuario */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1">Correo Electrónico *</label>
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Correo Electrónico *</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="usuario@uagrm.edu.bo"
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Nombre de Usuario (Username) *</label>
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nombre de Usuario (Username) *</label>
                   <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="ebalcazar"
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                     required
                   />
@@ -454,11 +467,11 @@ export const UserManagement: React.FC = () => {
 
               {/* Rol Académico (CU1, Req. 2) */}
               <div>
-                <label className="block font-semibold mb-1">Rol de Acceso al Negocio *</label>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Rol de Acceso al Negocio *</label>
                 <select
                   value={idRol}
                   onChange={(e) => setIdRol(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                 >
                   {roles.map((r) => (
@@ -471,10 +484,10 @@ export const UserManagement: React.FC = () => {
 
               {/* Contraseña con Reglas Estrictas */}
               <div className="space-y-1">
-                <label className="block font-semibold mb-1 flex items-center justify-between">
+                <label className="block font-semibold mb-1 flex items-center justify-between text-slate-700 dark:text-slate-300">
                   <span>Contraseña de Acceso *</span>
-                  <span className="text-[10px] opacity-60 flex items-center gap-1 font-normal">
-                    <Lock className="w-3 h-3" /> Regla institucional estricta
+                  <span className="text-[10px] text-slate-400 flex items-center gap-1 font-normal">
+                    <Lock className="w-3 h-3" /> Regla institucional
                   </span>
                 </label>
                 <input
@@ -482,39 +495,42 @@ export const UserManagement: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="8 a 25 caracteres alfanuméricos"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none ${
-                    password ? (isPasswordValid ? 'border-emerald-500' : 'border-rose-500') : ''
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 ${
+                    password ? (isPasswordValid ? 'border-emerald-500 focus:ring-emerald-500' : 'border-rose-500 focus:ring-rose-500') : 'focus:ring-sky-500'
                   }`}
                   style={{ backgroundColor: 'var(--bg-app)', borderColor: password ? undefined : 'var(--border-color)' }}
                   required
                 />
 
                 {/* Guía de validación en tiempo real */}
-                <div className="p-2.5 rounded-lg bg-black/5 dark:bg-white/5 space-y-1 text-[11px]">
-                  <div className={`flex items-center gap-1.5 ${isPasswordLengthValid ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                <div 
+                  className="p-2.5 rounded-lg border space-y-1 text-[11px]"
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                >
+                  <div className={`flex items-center gap-1.5 ${isPasswordLengthValid ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Longitud entre 8 y 25 caracteres ({password.length}/25)
                   </div>
-                  <div className={`flex items-center gap-1.5 ${hasUpperCase && hasLowerCase ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                  <div className={`flex items-center gap-1.5 ${hasUpperCase && hasLowerCase ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Al menos una mayúscula (A-Z, Ñ) y una minúscula (a-z, ñ)
                   </div>
-                  <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                  <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Al menos un dígito numérico (0-9)
                   </div>
-                  <div className={`flex items-center gap-1.5 ${hasSpecialChar ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                  <div className={`flex items-center gap-1.5 ${hasSpecialChar ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Al menos un símbolo permitido (@$!%*#?&_\-.)
                   </div>
-                  <div className={`flex items-center gap-1.5 ${hasOnlyAllowedChars && password.length > 0 ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                  <div className={`flex items-center gap-1.5 ${hasOnlyAllowedChars && password.length > 0 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Sin espacios ni caracteres prohibidos
                   </div>
                 </div>
               </div>
 
               {/* Botones */}
-              <div className="flex justify-end gap-3 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="flex justify-end gap-2.5 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border rounded-lg hover:opacity-80"
+                  className="px-4 py-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-slate-700 dark:text-slate-300 cursor-pointer"
                   style={{ borderColor: 'var(--border-color)' }}
                   disabled={saving}
                 >
@@ -523,7 +539,7 @@ export const UserManagement: React.FC = () => {
                 <button
                   type="submit"
                   disabled={saving || !isPasswordValid}
-                  className="px-5 py-2 bg-primary text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-40 flex items-center gap-2"
+                  className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg font-bold shadow-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer"
                 >
                   {saving ? (
                     <>
@@ -540,37 +556,40 @@ export const UserManagement: React.FC = () => {
         document.body
       )}
 
-      {/* Modal para Restablecer Contraseña por el Director */}
+      {/* 4. Modal para Restablecer Contraseña por el Director (ADR-006) */}
       {showResetModal && targetUser && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div
-            className="w-full max-w-md rounded-2xl border shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
+            className="w-full max-w-md rounded-xl border shadow-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+            style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
           >
             <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
               <div className="flex items-center gap-2">
-                <KeyRound className="w-5 h-5 text-amber-500" />
-                <h3 className="font-bold text-base">Restablecer Contraseña</h3>
+                <KeyRound className="w-4 h-4 text-amber-500" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Restablecer Contraseña (ADR-006)</h3>
               </div>
               <button
                 onClick={() => setShowResetModal(false)}
-                className="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 opacity-60"
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Información del usuario afectado */}
-            <div className="p-3 rounded-xl bg-black/5 dark:bg-white/5 border space-y-1" style={{ borderColor: 'var(--border-color)' }}>
-              <div className="text-xs font-bold">{targetUser.nombre_completo}</div>
-              <div className="text-[11px] opacity-70 flex items-center justify-between">
+            <div 
+              className="p-3 rounded-lg border space-y-1"
+              style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+            >
+              <div className="text-xs font-bold text-slate-900 dark:text-white">{targetUser.nombre_completo}</div>
+              <div className="text-[11px] text-slate-400 flex items-center justify-between">
                 <span>@{targetUser.username} • {targetUser.email}</span>
-                <span className="font-semibold">{targetUser.rol?.nombre}</span>
+                <span className="font-semibold text-slate-600 dark:text-slate-300">{targetUser.rol?.nombre}</span>
               </div>
             </div>
 
             {resetError && (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{resetError}</span>
               </div>
@@ -578,7 +597,7 @@ export const UserManagement: React.FC = () => {
 
             {resetSuccess ? (
               <div className="space-y-4 text-xs">
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
                   <div>
                     <div className="font-bold">Contraseña restablecida con éxito</div>
@@ -586,21 +605,27 @@ export const UserManagement: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl border bg-black/5 dark:bg-white/5 space-y-2" style={{ borderColor: 'var(--border-color)' }}>
-                  <span className="text-[11px] opacity-70 block font-semibold">Contraseña temporal asignada:</span>
-                  <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-white dark:bg-black/40 border font-mono font-bold text-sm">
-                    <span className="text-primary tracking-wider">{resetPassword}</span>
+                <div 
+                  className="p-3.5 rounded-lg border space-y-2"
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                >
+                  <span className="text-[11px] text-slate-400 block font-semibold">Contraseña temporal asignada:</span>
+                  <div 
+                    className="flex items-center justify-between gap-2 p-2 rounded-lg border font-mono font-bold text-sm"
+                    style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
+                  >
+                    <span className="text-sky-600 dark:text-sky-400 tracking-wider">{resetPassword}</span>
                     <button
                       type="button"
                       onClick={handleCopiarClave}
-                      className="px-2.5 py-1 rounded border text-xs flex items-center gap-1 hover:opacity-80 transition cursor-pointer"
+                      className="px-2.5 py-1 rounded border text-xs flex items-center gap-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-slate-700 dark:text-slate-300"
                       style={{ borderColor: 'var(--border-color)' }}
                     >
                       {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copied ? 'Copiado!' : 'Copiar'}</span>
                     </button>
                   </div>
-                  <span className="text-[10px] opacity-60 block">
+                  <span className="text-[10px] text-slate-400 block">
                     * El usuario deberá cambiar obligatoriamente esta contraseña en su próximo inicio de sesión.
                   </span>
                 </div>
@@ -609,21 +634,21 @@ export const UserManagement: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowResetModal(false)}
-                    className="px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:opacity-90 cursor-pointer"
+                    className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg font-bold cursor-pointer"
                   >
                     Entendido / Cerrar
                   </button>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleEjecutarReset} className="space-y-4 text-xs">
+              <form onSubmit={handleEjecutarReset} className="space-y-3.5 text-xs">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="font-semibold">Nueva Contraseña Temporal *</label>
+                    <label className="font-semibold text-slate-700 dark:text-slate-300">Nueva Contraseña Temporal *</label>
                     <button
                       type="button"
                       onClick={handleGenerarSugerencia}
-                      className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                      className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                     >
                       <span>Usar sugerencia: Uagrm2026ñ*</span>
                     </button>
@@ -633,36 +658,39 @@ export const UserManagement: React.FC = () => {
                     value={resetPassword}
                     onChange={(e) => setResetPassword(e.target.value)}
                     placeholder="ej: Uagrm2026ñ*"
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none font-mono"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
                     style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
                     required
                   />
                 </div>
 
                 {/* Guía de validación en tiempo real */}
-                <div className="p-2.5 rounded-lg bg-black/5 dark:bg-white/5 space-y-1 text-[11px] border" style={{ borderColor: 'var(--border-color)' }}>
-                  <div className={`flex items-center gap-1.5 ${isResetLengthValid ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                <div 
+                  className="p-2.5 rounded-lg border space-y-1 text-[11px]"
+                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                >
+                  <div className={`flex items-center gap-1.5 ${isResetLengthValid ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Longitud entre 8 y 25 caracteres ({resetPassword.length}/25)
                   </div>
-                  <div className={`flex items-center gap-1.5 ${isResetHasUpper && isResetHasLower ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                  <div className={`flex items-center gap-1.5 ${isResetHasUpper && isResetHasLower ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Al menos una mayúscula (A-Z, Ñ) y una minúscula (a-z, ñ)
                   </div>
-                  <div className={`flex items-center gap-1.5 ${isResetHasNumber ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                  <div className={`flex items-center gap-1.5 ${isResetHasNumber ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Al menos un dígito numérico (0-9)
                   </div>
-                  <div className={`flex items-center gap-1.5 ${isResetHasSpecial ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                  <div className={`flex items-center gap-1.5 ${isResetHasSpecial ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Al menos un símbolo permitido (@$!%*#?&_\-.)
                   </div>
-                  <div className={`flex items-center gap-1.5 ${isResetHasOnlyAllowed && resetPassword.length > 0 ? 'text-emerald-500 font-semibold' : 'opacity-60'}`}>
+                  <div className={`flex items-center gap-1.5 ${isResetHasOnlyAllowed && resetPassword.length > 0 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
                     <CheckCircle2 className="w-3 h-3" /> Sin espacios ni caracteres prohibidos
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                <div className="flex justify-end gap-2.5 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
                   <button
                     type="button"
                     onClick={() => setShowResetModal(false)}
-                    className="px-4 py-2 border rounded-lg hover:opacity-80 cursor-pointer"
+                    className="px-4 py-2 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-slate-700 dark:text-slate-300 cursor-pointer"
                     style={{ borderColor: 'var(--border-color)' }}
                     disabled={resetSaving}
                   >
@@ -671,7 +699,7 @@ export const UserManagement: React.FC = () => {
                   <button
                     type="submit"
                     disabled={resetSaving || !isResetValid}
-                    className="px-5 py-2 bg-primary text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-40 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg font-bold shadow-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer"
                   >
                     {resetSaving ? (
                       <>
@@ -691,4 +719,3 @@ export const UserManagement: React.FC = () => {
     </div>
   );
 };
-

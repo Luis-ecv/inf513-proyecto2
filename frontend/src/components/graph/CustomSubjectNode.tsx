@@ -19,20 +19,20 @@ export const CustomSubjectNode: React.FC<NodeProps> = memo(({ data }) => {
   let borderStyle = 'var(--border-color)';
   let bgStyle = 'var(--bg-card)';
   let opacity = 1;
-  let shadow = '0 1px 3px rgba(0,0,0,0.1)';
+  let shadow = '0 1px 3px rgba(0,0,0,0.06)';
   let badgeText = '';
 
   if (highlight === 'selected') {
-    borderStyle = '#3b82f6';
-    shadow = '0 0 0 3px rgba(59, 130, 246, 0.4)';
+    borderStyle = '#009fe3';
+    shadow = '0 0 0 3px rgba(0, 159, 227, 0.35)';
     badgeText = 'Seleccionada';
   } else if (highlight === 'backward') {
     borderStyle = '#f59e0b';
-    bgStyle = 'rgba(245, 158, 11, 0.12)';
+    bgStyle = 'rgba(245, 158, 11, 0.08)';
     badgeText = '⬅ Prerrequisito';
   } else if (highlight === 'forward') {
-    borderStyle = '#10b981';
-    bgStyle = 'rgba(16, 185, 129, 0.12)';
+    borderStyle = '#8dc63f';
+    bgStyle = 'rgba(141, 198, 63, 0.1)';
     badgeText = 'Materia Bloqueada ➡';
   } else if (highlight === 'dimmed') {
     opacity = 0.35;
@@ -40,7 +40,7 @@ export const CustomSubjectNode: React.FC<NodeProps> = memo(({ data }) => {
 
   return (
     <div
-      className="p-3 rounded-xl border transition-all text-xs w-56 select-none relative"
+      className="p-3 rounded-lg border transition-all text-xs w-56 select-none relative shadow-xs"
       style={{
         backgroundColor: bgStyle,
         borderColor: borderStyle,
@@ -49,13 +49,17 @@ export const CustomSubjectNode: React.FC<NodeProps> = memo(({ data }) => {
         boxShadow: shadow,
       }}
     >
-      <Handle type="target" position={Position.Left} className="w-2.5 h-2.5 bg-blue-500" />
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        className="w-2.5 h-2.5 !bg-sky-500 !border-2 !border-white dark:!border-slate-900" 
+      />
 
       {badgeText && (
         <span 
-          className="absolute -top-2.5 left-2 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase border"
+          className="absolute -top-2.5 left-2 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase border shadow-2xs"
           style={{
-            backgroundColor: highlight === 'backward' ? '#f59e0b' : highlight === 'forward' ? '#10b981' : '#3b82f6',
+            backgroundColor: highlight === 'backward' ? '#f59e0b' : highlight === 'forward' ? '#8dc63f' : '#009fe3',
             color: '#ffffff',
             borderColor: 'transparent'
           }}
@@ -65,22 +69,36 @@ export const CustomSubjectNode: React.FC<NodeProps> = memo(({ data }) => {
       )}
 
       <div className="flex justify-between items-center mb-1">
-        <span className="font-extrabold text-sm tracking-wide text-blue-500">{nodeData.sigla}</span>
-        <span className="text-[10px] px-1.5 py-0.5 rounded border opacity-80" style={{ borderColor: 'var(--border-color)' }}>
+        <span className="font-mono font-bold text-sm tracking-wide text-sistemas-cyan">
+          {nodeData.sigla}
+        </span>
+        <span 
+          className="text-[10px] px-1.5 py-0.5 rounded border font-semibold text-slate-500 dark:text-slate-400"
+          style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+        >
           {nodeData.creditos} cr
         </span>
       </div>
 
-      <div className="font-semibold leading-tight line-clamp-2 h-8" title={nodeData.nombre}>
+      <div className="font-semibold leading-tight line-clamp-2 h-8 text-slate-800 dark:text-slate-100" title={nodeData.nombre}>
         {nodeData.nombre}
       </div>
 
-      <div className="flex justify-between items-center mt-2 pt-1 border-t text-[10px] opacity-70" style={{ borderColor: 'var(--border-color)' }}>
-        <span>Sem. {nodeData.semestre}</span>
-        <span className="truncate max-w-[100px]">{nodeData.areaFormativa}</span>
+      <div 
+        className="flex justify-between items-center mt-2 pt-1.5 border-t text-[10px] text-slate-500 dark:text-slate-400"
+        style={{ borderColor: 'var(--border-color)' }}
+      >
+        <span className="font-medium">Semestre {nodeData.semestre}</span>
+        <span className="truncate max-w-[105px] font-medium text-right text-slate-600 dark:text-slate-300" title={nodeData.areaFormativa}>
+          {nodeData.areaFormativa}
+        </span>
       </div>
 
-      <Handle type="source" position={Position.Right} className="w-2.5 h-2.5 bg-amber-500" />
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        className="w-2.5 h-2.5 !bg-amber-500 !border-2 !border-white dark:!border-slate-900" 
+      />
     </div>
   );
 });
