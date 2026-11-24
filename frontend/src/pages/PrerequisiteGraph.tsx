@@ -2,14 +2,17 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { 
   ReactFlow, Background, Controls, MiniMap, 
   useNodesState, useEdgesState, 
+  getNodesBounds, getViewportForBounds,
   type Node, type Edge, type Connection
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 import api from '../services/api';
 import { CustomSubjectNode } from '../components/graph/CustomSubjectNode';
 import { 
   GitFork, Plus, AlertCircle, CheckCircle2, RotateCcw, 
-  ArrowLeft, X, Info, Unlink, Trash2
+  ArrowLeft, X, Info, Unlink, Trash2, Download, FileText, Image, ChevronDown, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getActivePlanId } from '../services/activePlan';
@@ -38,6 +41,10 @@ export const PrerequisiteGraph: React.FC = () => {
   const [vincularSuccess, setVincularSuccess] = useState('');
   const [saving, setSaving] = useState(false);
   const [unlinkingEdgeId, setUnlinkingEdgeId] = useState<string | null>(null);
+
+  // Estados para exportación dual (PNG / PDF)
+  const [exporting, setExporting] = useState<'png' | 'pdf' | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Cargar Grafo desde API
   const fetchGrafo = async () => {
@@ -238,6 +245,167 @@ export const PrerequisiteGraph: React.FC = () => {
     return node ? `${node.data.sigla} - ${node.data.nombre}` : `Asignatura #${id}`;
   };
 
+  // Exportar Grafo en formato PNG de alta resolución o PDF Oficial Institucional A3
+  const exportarGrafo = async (tipo: 'png' | 'pdf') => {
+    if (nodes.length === 0 || exporting) return;
+    setShowExportMenu(false);
+    setExporting(tipo);
+
+    try {
+      const viewportEl = document.querySelector<HTMLElement>('.react-flow__viewport');
+      if (!viewportEl) {
+        window.alert('No se encontró el lienzo del grafo para exportar.');
+        return;
+      }
+
+      // Asegurar que cada nodo posea dimensiones para el cálculo de límites globales
+      const nodesWithBounds = nodes.map((n) => ({
+        ...n,
+        width: n.width ?? (n as any).measured?.width ?? 224,
+        height: n.height ?? (n as any).measured?.height ?? 100,
+      }));
+
+      const bounds = getNodesBounds(nodesWithBounds);
+      const padding = 80;
+      const imageWidth = Math.max(bounds.width + padding * 2, 900);
+      const imageHeight = Math.max(bounds.height + padding * 2, 600);
+
+      const vp = getViewportForBounds(
+        bounds,
+        imageWidth,
+        imageHeight,
+        0.1,
+        2,
+        0.05
+      );
+
+      const isDark = document.documentElement.classList.contains('dark');
+      const backgroundColor = isDark ? '#0b1329' : '#ffffff';
+
+      const dataUrl = await toPng(viewportEl, {
+        backgroundColor,
+        width: imageWidth,
+        height: imageHeight,
+        style: {
+          width: `${imageWidth}px`,
+          height: `${imageHeight}px`,
+          transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
+        },
+        pixelRatio: 2,
+      });
+
+      const fechaHoy = new Date().toISOString().slice(0, 10);
+
+      if (tipo === 'png') {
+        const link = document.createElement('a');
+        link.download = `Malla_Curricular_Grafo_Prelaciones_${fechaHoy}.png`;
+        link.href = dataUrl;
+        link.click();
+      } else {
+        // Documento Oficial jsPDF en Formato A3 Paisaje (420 x 297 mm)
+        const doc = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a3',
+        });
+
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        // Franja de encabezado superior institucional FICCT (#0B1E36)
+        doc.setFillColor(11, 30, 54);
+        doc.rect(0, 0, pageWidth, 28, 'F');
+
+        // Línea de acento Cyan Sistemas (#009FE3)
+        doc.setFillColor(0, 159, 227);
+        doc.rect(0, 28, pageWidth, 2, 'F');
+
+        // Textos institucionales del encabezado
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.text('UNIVERSIDAD AUTÓNOMA GABRIEL RENÉ MORENO', 15, 11);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(186, 215, 233);
+        doc.text('Facultad de Ciencias de la Computación y Telecomunicaciones (FICCT) — Dirección de Carrera', 15, 17);
+        doc.text('Plan de Estudios Vigente — Gestión Académica Curricular', 15, 22);
+
+        // Metadatos a la derecha del membrete
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10.5);
+        doc.setTextColor(0, 159, 227);
+        doc.text('RED DE PRERREQUISITOS PEDAGÓGICOS (DAG)', pageWidth - 15, 11, { align: 'right' });
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(226, 232, 240);
+        doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-ES')}`, pageWidth - 15, 17, { align: 'right' });
+        doc.text(`Total asignaturas: ${nodes.length} | Prelaciones activas: ${edges.length}`, pageWidth - 15, 22, { align: 'right' });
+
+        // Área disponible para el lienzo del grafo
+        const areaX = 14;
+        const areaY = 36;
+        const areaW = pageWidth - 28;
+        const areaH = pageHeight - 52;
+
+        const imgRatio = imageWidth / imageHeight;
+        const areaRatio = areaW / areaH;
+
+        let renderW = areaW;
+        let renderH = areaH;
+        let renderX = areaX;
+        let renderY = areaY;
+
+        if (imgRatio > areaRatio) {
+          renderW = areaW;
+          renderH = areaW / imgRatio;
+          renderY = areaY + (areaH - renderH) / 2;
+        } else {
+          renderH = areaH;
+          renderW = areaH * imgRatio;
+          renderX = areaX + (areaW - renderW) / 2;
+        }
+
+        if (isDark) {
+          doc.setFillColor(11, 19, 41);
+          doc.roundedRect(renderX - 1, renderY - 1, renderW + 2, renderH + 2, 2, 2, 'F');
+        }
+
+        doc.addImage(dataUrl, 'PNG', renderX, renderY, renderW, renderH);
+
+        // Pie de página oficial
+        doc.setDrawColor(203, 213, 225);
+        doc.setLineWidth(0.4);
+        doc.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text(
+          'Documento institucional oficial emitido por el Sistema de Seguimiento Curricular - FICCT UAGRM',
+          14,
+          pageHeight - 7
+        );
+        doc.text(
+          'Grafo Acíclico Dirigido generado mediante el algoritmo de prelaciones pedagógicas',
+          pageWidth / 2,
+          pageHeight - 7,
+          { align: 'center' }
+        );
+        doc.text('Página 1 de 1', pageWidth - 14, pageHeight - 7, { align: 'right' });
+
+        doc.save(`Malla_Curricular_Grafo_Prelaciones_${fechaHoy}.pdf`);
+      }
+    } catch (err) {
+      console.error('Error al exportar grafo:', err);
+      window.alert('Ocurrió un error al generar la exportación del grafo.');
+    } finally {
+      setExporting(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -300,6 +468,80 @@ export const PrerequisiteGraph: React.FC = () => {
               <RotateCcw className="w-3.5 h-3.5" /> Limpiar Selección
             </button>
           )}
+
+          {/* Menú Desplegable Exportar Grafo (Dual: PNG / PDF) */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={exporting !== null || nodes.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-50"
+              style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+              title="Exportar grafo en formato imagen o documento oficial PDF"
+            >
+              {exporting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-500" />
+                  <span>{exporting === 'png' ? 'Generando PNG...' : 'Generando PDF...'}</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5 text-sky-500" />
+                  <span>Exportar Grafo</span>
+                  <ChevronDown className="w-3 h-3 text-slate-400" />
+                </>
+              )}
+            </button>
+
+            {showExportMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-20" 
+                  onClick={() => setShowExportMenu(false)} 
+                />
+                <div 
+                  className="absolute right-0 mt-1.5 w-72 p-1.5 rounded-xl border shadow-xl z-30 animate-in fade-in zoom-in-95 duration-100 space-y-1"
+                  style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => exportarGrafo('png')}
+                    className="w-full flex items-start gap-2.5 p-2 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-slate-800/70 transition"
+                  >
+                    <div className="p-1.5 rounded-md bg-sky-500/10 text-sky-500 shrink-0 mt-0.5">
+                      <Image className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                        Imagen PNG (Alta Definición)
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                        Resolución nítida 2x DPI para diapositivas y presentaciones.
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => exportarGrafo('pdf')}
+                    className="w-full flex items-start gap-2.5 p-2 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-slate-800/70 transition"
+                  >
+                    <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-500 shrink-0 mt-0.5">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                        Documento PDF (Oficio A3)
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                        Formato apaisado con membrete institucional oficial FICCT.
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           {!esInvitado && (
             <>

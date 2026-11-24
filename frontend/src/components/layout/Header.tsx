@@ -263,7 +263,7 @@ export const Header: React.FC = () => {
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            👔 Adultos
+             Adultos
           </button>
           <button
             onClick={() => setTheme('jovenes')}
@@ -274,7 +274,7 @@ export const Header: React.FC = () => {
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            ⚡ Jóvenes
+             Jóvenes
           </button>
           <button
             onClick={() => setTheme('ninos')}
@@ -285,7 +285,7 @@ export const Header: React.FC = () => {
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            🎨 Niños
+             Niños
           </button>
         </div>
 

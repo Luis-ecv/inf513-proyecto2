@@ -12,7 +12,7 @@ auth.json
 # Configuraciones Locales de Agentes / IA
 # ==========================================
 AGENTS.md
-!.agents/AGENTS.md
+.agents/
 
 # ==========================================
 # Dependencias de Paquetes
