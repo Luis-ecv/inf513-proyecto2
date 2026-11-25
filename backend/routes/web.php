@@ -24,5 +24,5 @@ Route::get('/{any?}', function () {
         return response()->file($indexPath);
     }
     return view('welcome');
-})->where('any', '^(?!api).*$');
+})->where('any', '^(?!.*api).*$');
 

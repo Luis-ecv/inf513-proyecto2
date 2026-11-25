@@ -5,6 +5,13 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+// Normalizar variables de servidor cuando se despacha mediante rewrite desde subdirectorios
+foreach (['SCRIPT_NAME', 'PHP_SELF'] as $key) {
+    if (isset($_SERVER[$key]) && str_contains($_SERVER[$key], '/backend/public/index.php')) {
+        $_SERVER[$key] = str_replace('/backend/public/index.php', '/index.php', $_SERVER[$key]);
+    }
+}
+
 // Determine if the application is in maintenance mode...
 if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
     require $maintenance;

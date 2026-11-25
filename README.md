@@ -347,3 +347,70 @@ TW-php/
 - **Semestre:** 2-2026
 - **Santa Cruz de la Sierra, Bolivia**
 
+---
+
+## 11. Guía de Despliegue y Cambio de Subdirectorio / Subcarpeta (Apache / TecnoWeb)
+
+En entornos de producción donde la aplicación no reside en la raíz del dominio sino en una subcarpeta (por ejemplo, en el servidor institucional `https://mail.tecnoweb.org.bo/inf513/grupo02sa/inf513-proyecto2`), se deben actualizar **4 archivos clave** si la ruta o el nombre de la carpeta llegara a cambiar:
+
+### 1. Archivos y Directivas a Modificar
+
+Si la nueva URL es, por ejemplo, `https://mail.tecnoweb.org.bo/NUEVA_RUTA`:
+
+| # | Archivo | Línea / Directiva | Valor de Ejemplo |
+| :-: | :--- | :--- | :--- |
+| **1** | `/.htaccess` *(raíz del proyecto)* | `RewriteBase` | `RewriteBase /NUEVA_RUTA/` |
+| **2** | `/backend/public/.htaccess` | `RewriteBase` | `RewriteBase /NUEVA_RUTA/` |
+| **3** | `/frontend/vite.config.ts` | `base: command === 'build'` | `base: command === 'build' ? '/NUEVA_RUTA/' : '/',` |
+| **4** | `/backend/.env` *(en el servidor)* | `APP_URL` | `APP_URL=https://mail.tecnoweb.org.bo/NUEVA_RUTA` |
+
+> [!IMPORTANT]
+> - En `/.htaccess`, `/backend/public/.htaccess` y `/frontend/vite.config.ts`, la ruta siempre **debe iniciar y terminar con barra inclinada (`/`)**, por ejemplo: `/inf513/grupo02sa/inf513-proyecto2/`.
+> - Los componentes de React (`App.tsx` con React Router y `api.ts` con Axios) consumen dinámicamente `import.meta.env.BASE_URL`, por lo que **no requieren modificaciones manuales de código**.
+
+---
+
+### 2. Flujo de Regeneración y Despliegue Paso a Paso
+
+Una vez cambiadas las directivas anteriores, sigue este procedimiento para aplicar los cambios:
+
+#### Paso A: Compilar el Frontend localmente
+En la terminal de tu máquina de desarrollo:
+```powershell
+# 1. Posicionarse en la carpeta frontend
+cd frontend
+
+# 2. Generar el bundle de producción con la nueva ruta base
+npm run build
+```
+
+#### Paso B: Sincronizar el compilado en `backend/public/`
+Copia los archivos generados en `frontend/dist/` hacia el directorio público de Laravel:
+```powershell
+# Desde la raíz del proyecto en PowerShell:
+Copy-Item -Path "frontend/dist/*" -Destination "backend/public" -Recurse -Force
+```
+
+#### Paso C: Subir cambios al servidor
+Sube los archivos a GitHub (o vía FTP/FileZilla):
+```bash
+git add .
+git commit -m "chore: actualizar ruta base de subdirectorio"
+git push origin main
+```
+*(Si usas FileZilla, asegúrate de activar **Servidor → Forzar mostrar archivos ocultos** para no omitir `/.htaccess` ni `/backend/public/.htaccess`).*
+
+#### Paso D: Actualizar el servidor de TecnoWeb
+Conéctate por SSH al servidor (`grupo02sa@web`) y ejecuta:
+```bash
+cd ~/inf513-proyecto2
+git pull origin main
+
+cd backend
+# Refrescar la caché de configuración y rutas de Laravel
+php artisan config:clear
+php artisan config:cache
+php artisan route:cache
+```
+
+
