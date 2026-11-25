@@ -349,68 +349,114 @@ TW-php/
 
 ---
 
-## 11. Guía de Despliegue y Cambio de Subdirectorio / Subcarpeta (Apache / TecnoWeb)
+## 11. Guía Universal de Despliegue y Cambio de Servidor (Subcarpeta o Subdominio)
 
-En entornos de producción donde la aplicación no reside en la raíz del dominio sino en una subcarpeta (por ejemplo, en el servidor institucional `https://mail.tecnoweb.org.bo/inf513/grupo02sa/inf513-proyecto2`), se deben actualizar **4 archivos clave** si la ruta o el nombre de la carpeta llegara a cambiar:
-
-### 1. Archivos y Directivas a Modificar
-
-Si la nueva URL es, por ejemplo, `https://mail.tecnoweb.org.bo/NUEVA_RUTA`:
-
-| # | Archivo | Línea / Directiva | Valor de Ejemplo |
-| :-: | :--- | :--- | :--- |
-| **1** | `/.htaccess` *(raíz del proyecto)* | `RewriteBase` | `RewriteBase /NUEVA_RUTA/` |
-| **2** | `/backend/public/.htaccess` | `RewriteBase` | `RewriteBase /NUEVA_RUTA/` |
-| **3** | `/frontend/vite.config.ts` | `base: command === 'build'` | `base: command === 'build' ? '/NUEVA_RUTA/' : '/',` |
-| **4** | `/backend/.env` *(en el servidor)* | `APP_URL` | `APP_URL=https://mail.tecnoweb.org.bo/NUEVA_RUTA` |
-
-> [!IMPORTANT]
-> - En `/.htaccess`, `/backend/public/.htaccess` y `/frontend/vite.config.ts`, la ruta siempre **debe iniciar y terminar con barra inclinada (`/`)**, por ejemplo: `/inf513/grupo02sa/inf513-proyecto2/`.
-> - Los componentes de React (`App.tsx` con React Router y `api.ts` con Axios) consumen dinámicamente `import.meta.env.BASE_URL`, por lo que **no requieren modificaciones manuales de código**.
+Este proyecto está diseñado bajo una **arquitectura monorepo desacoplada** (`backend/` en Laravel y `frontend/` en React). Para desplegarlo en cualquier servidor web Apache (sea en TecnoWeb, un VPS, cPanel o servidor institucional), el sistema soporta dos modalidades de acceso:
+1. **Modalidad A: Por Subcarpeta / Subdirectorio** (ejemplo: `https://servidor.edu.bo/facultad/proyecto`)
+2. **Modalidad B: Por Subdominio Dedicado o Raíz** (ejemplo: `https://rediseño.ficct.uagrm.edu.bo` o `http://localhost/`)
 
 ---
 
-### 2. Flujo de Regeneración y Despliegue Paso a Paso
+### 1. Puntos de Configuración según la Modalidad del Servidor
 
-Una vez cambiadas las directivas anteriores, sigue este procedimiento para aplicar los cambios:
+Solo existen **4 archivos de configuración** que deben ajustarse según la URL donde residirá el sistema:
 
-#### Paso A: Compilar el Frontend localmente
-En la terminal de tu máquina de desarrollo:
-```powershell
-# 1. Posicionarse en la carpeta frontend
-cd frontend
+| # | Archivo a Modificar | Directiva / Variable | Caso A: Subcarpeta<br>`https://servidor.com/carrera/proyecto` | Caso B: Subdominio o Raíz<br>`https://subdominio.servidor.com/` |
+| :-: | :--- | :--- | :--- | :--- |
+| **1** | `/.htaccess` *(raíz del monorepo)* | `RewriteBase` | `RewriteBase /carrera/proyecto/` | `RewriteBase /` |
+| **2** | `/backend/public/.htaccess` | `RewriteBase` | `RewriteBase /carrera/proyecto/` | `RewriteBase /` |
+| **3** | `/frontend/vite.config.ts` | `base: command === 'build'` | `'/carrera/proyecto/'` | `'/'` |
+| **4** | `/backend/.env` *(en el servidor)* | `APP_URL` | `https://servidor.com/carrera/proyecto` | `https://subdominio.servidor.com` |
 
-# 2. Generar el bundle de producción con la nueva ruta base
-npm run build
+> [!IMPORTANT]
+> - **Regla de las barras (`/`):** En `/.htaccess`, `/backend/public/.htaccess` y `vite.config.ts`, la ruta siempre debe comenzar y terminar con barra inclinada (ejemplo: `/inf513/grupo02sa/inf513-proyecto2/` o `/`).
+> - **Código React Agnóstico:** El enrutador (`App.tsx`) y el cliente Axios (`api.ts`) consumen dinámicamente `import.meta.env.BASE_URL`, por lo que **no requieren modificaciones manuales de código** al cambiar de servidor.
+
+---
+
+### 2. Blindaje Automático en `backend/public/index.php` (Front Controller)
+
+En `backend/public/index.php` se implementó una normalización automática del entorno:
+```php
+foreach (['SCRIPT_NAME', 'PHP_SELF'] as $key) {
+    if (isset($_SERVER[$key]) && str_contains($_SERVER[$key], '/backend/public/index.php')) {
+        $_SERVER[$key] = str_replace('/backend/public/index.php', '/index.php', $_SERVER[$key]);
+    }
+}
 ```
+**¿Por qué es importante?**
+- Permite que Apache redirija transparentemente desde la raíz del monorepo hacia `backend/public/` sin que Symfony o Laravel se confundan con el método HTTP (evitando el error `The POST method is not supported`).
+- **No requiere modificarse nunca al cambiar de servidor**, ya que detecta la estructura interna de carpetas de forma 100% agnóstica al nombre del dominio o la ruta del host.
 
-#### Paso B: Sincronizar el compilado en `backend/public/`
-Copia los archivos generados en `frontend/dist/` hacia el directorio público de Laravel:
-```powershell
-# Desde la raíz del proyecto en PowerShell:
-Copy-Item -Path "frontend/dist/*" -Destination "backend/public" -Recurse -Force
-```
+---
 
-#### Paso C: Subir cambios al servidor
-Sube los archivos a GitHub (o vía FTP/FileZilla):
+### 3. Checklist Completo para Migrar a un Nuevo Servidor desde Cero
+
+Cuando lleves el proyecto a un nuevo servidor o equipo, sigue estos pasos ordenados:
+
+#### Paso 1: Clonar el Repositorio
 ```bash
-git add .
-git commit -m "chore: actualizar ruta base de subdirectorio"
-git push origin main
+git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git mi-proyecto
+cd mi-proyecto
 ```
-*(Si usas FileZilla, asegúrate de activar **Servidor → Forzar mostrar archivos ocultos** para no omitir `/.htaccess` ni `/backend/public/.htaccess`).*
 
-#### Paso D: Actualizar el servidor de TecnoWeb
-Conéctate por SSH al servidor (`grupo02sa@web`) y ejecuta:
+#### Paso 2: Configurar Variables de Entorno (`backend/.env`)
+Crea el archivo `backend/.env` configurando la base de datos y la URL del nuevo servidor:
+```env
+APP_NAME="Rediseño Curricular FICCT"
+APP_ENV=production
+APP_KEY=base64:fpcobfEL8fCJug8nB+GhvMja+QBrzFYoV6Fy8mKYrB4=
+APP_DEBUG=false
+APP_URL=https://TU_NUEVO_DOMINIO/TU_RUTA
+
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=TU_BASE_DATOS
+DB_USERNAME=TU_USUARIO
+DB_PASSWORD=TU_PASSWORD
+```
+
+#### Paso 3: Ajustar las 4 Directivas de Ruta
+Verifica los valores de `RewriteBase` en los dos archivos `.htaccess`, la propiedad `base` en `frontend/vite.config.ts` y `APP_URL` en `backend/.env` según la tabla de la Sección 1.
+
+#### Paso 4: Instalar Dependencias del Backend
 ```bash
-cd ~/inf513-proyecto2
-git pull origin main
-
 cd backend
-# Refrescar la caché de configuración y rutas de Laravel
+composer install --no-dev --optimize-autoloader
+```
+
+#### Paso 5: Permisos de Carpetas en Linux
+Asegura permisos de lectura y escritura para el servidor web en las carpetas de almacenamiento y caché:
+```bash
+chmod -R 775 storage bootstrap/cache
+```
+
+#### Paso 6: Ejecutar Migraciones y Datos Iniciales
+```bash
+php artisan migrate:fresh --seed --force
+```
+
+#### Paso 7: Compilar y Sincronizar el Frontend (SPA)
+En tu máquina local (o en el servidor si tiene Node.js):
+```powershell
+# En la carpeta frontend:
+npm run build
+
+# Copiar el contenido generado a la carpeta pública de Laravel:
+Copy-Item -Path "dist/*" -Destination "../backend/public" -Recurse -Force
+```
+
+#### Paso 8: Optimizar Caché de Producción
+En el servidor, dentro de `backend/`:
+```bash
 php artisan config:clear
+php artisan route:clear
+php artisan view:clear
 php artisan config:cache
 php artisan route:cache
+php artisan view:cache
 ```
+
 
 
