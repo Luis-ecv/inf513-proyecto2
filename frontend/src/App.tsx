@@ -99,7 +99,8 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
+        {/* basename institucional: utiliza '/inf513/grupo02sa/' en build y '/' en desarrollo local */}
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
           <AppContent />
         </BrowserRouter>
       </AuthProvider>

@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+// Base URL adaptada al subdirectorio institucional de TecnoWeb (/inf513/grupo02sa/api)
+// En desarrollo local import.meta.env.BASE_URL es '/', resolviendo en '/api'
+const apiBaseUrl = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, '/');
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -24,8 +28,10 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      // Redirección adaptada a la ruta base institucional (/inf513/grupo02sa/login)
+      const loginPath = `${import.meta.env.BASE_URL}login`.replace(/\/+/g, '/');
+      if (window.location.pathname !== loginPath) {
+        window.location.href = loginPath;
       }
     }
     return Promise.reject(error);

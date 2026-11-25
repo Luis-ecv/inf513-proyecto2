@@ -1,0 +1,8 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Redirigir transparentemente todo el tráfico que entra a /inf513/grupo02sa/inf513-proyecto2/ hacia backend/public/
+    RewriteBase /inf513/grupo02sa/inf513-proyecto2/
+
+    RewriteRule ^$ backend/public/ [L]
+    RewriteRule ^((?!backend/public/).*)$ backend/public/$1 [L]
+</IfModule>
