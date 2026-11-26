@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/capitulos/{id}/historial', [ChapterController::class, 'historialAuditoria']);
     Route::get('/capitulos/{id}/versiones', [ChapterController::class, 'listarVersiones']);
     Route::post('/capitulos/{id}/versiones', [ChapterController::class, 'storeVersion']);
+    Route::get('/capitulos/versiones/{idVersion}/descargar', [ChapterController::class, 'descargarVersion']);
 
     // Módulo 3: Repositorio Digital y Búsqueda Facetada (CU6, RF-11 a RF-14)
     Route::get('/evidencias', [EvidenceController::class, 'index']);

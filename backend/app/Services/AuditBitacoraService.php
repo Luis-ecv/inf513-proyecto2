@@ -149,6 +149,26 @@ class AuditBitacoraService
     }
 
     /**
+     * Registra un cambio o modificación general en el sistema (evidencias, componentes, capítulos).
+     */
+    public function registrarCambio(User $usuario, Request $request, string $detalle): BitacoraAcceso
+    {
+        $ip = $request->ip() ?? '127.0.0.1';
+        $userAgent = $request->userAgent() ?? 'System/Internal';
+
+        return BitacoraAcceso::create([
+            'id_usuario' => $usuario->id,
+            'ip_address' => $ip,
+            'user_agent' => substr((string) $userAgent, 0, 500),
+            'tipo_evento' => self::EVENTO_RECURSO_ACCEDIDO,
+            'recurso_accedido' => '/' . ltrim($request->path(), '/'),
+            'metodo_http' => $request->method(),
+            'detalle' => $detalle,
+            'fecha_hora' => now(),
+        ]);
+    }
+
+    /**
      * Registra el acceso a un recurso de la API.
      */
     public function registrarAccesoRecurso(?User $usuario, Request $request): void

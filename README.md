@@ -458,5 +458,69 @@ php artisan route:cache
 php artisan view:cache
 ```
 
+---
+
+## 12. Configuración de Correo SMTP Institucional y Gestión de Caché en Producción
+
+### 1. Parámetros Validados para el Servicio de Correo en TecnoWeb
+
+En el archivo `backend/.env` del servidor, la sección de correo debe configurarse de la siguiente manera:
+
+```env
+# ========================================================
+# CONFIGURACIÓN SMTP VALIDADA EN TECNOWEB
+# ========================================================
+MAIL_MAILER=smtp
+MAIL_SCHEME=null
+MAIL_HOST=127.0.0.1
+MAIL_PORT=25
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_TIMEOUT=5
+MAIL_VERIFY_PEER=false
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS="grupo02sa@tecnoweb.org.bo"
+MAIL_FROM_NAME="Comisión de Rediseño Curricular - UAGRM"
+```
+
+#### ¿Por qué usar `127.0.0.1` en lugar de `tecnoweb.org.bo`? (Motivo Técnico del Error 454)
+- **El error `454 4.7.1 Relay access denied`:** Ocurre cuando se coloca `MAIL_HOST=tecnoweb.org.bo`. Al estar ejecutándose dentro del propio servidor, la aplicación intenta salir hacia la IP pública externa (`181.115.244.154`) para reconectarse a sí misma. El agente de transporte de correo (Postfix/Sendmail) detecta la conexión como proveniente de una IP externa no autenticada y rechaza el reenvío de correos hacia dominios externos como `@gmail.com`.
+- **La solución con `127.0.0.1`:** Al apuntar a `127.0.0.1` (localhost), la conexión entra por la interfaz de loopback interna. La configuración de Postfix incluye `127.0.0.0/8` en su lista de redes de máxima confianza (`mynetworks`), autorizando el relay y la entrega inmediata de correos sin exigir contraseñas SASL ni bloquearse por certificados SSL autofirmados (`verify_peer=false`).
+
+---
+
+### 2. Fundamentos de la Caché de Configuración y Rutas en Producción
+
+En entornos de producción (`APP_ENV=production`), Laravel no analiza el archivo `.env` en cada petición HTTP por motivos estrictos de rendimiento. En su lugar, compila toda la configuración en un archivo plano en disco (`bootstrap/cache/config.php`).
+
+> [!WARNING]
+> **Peligro de configuración congelada:**  
+> Si editas una variable en el archivo `.env` (por ejemplo, cambiando `MAIL_HOST` o `APP_URL`), **Laravel ignorará por completo el cambio** hasta que se ejecute la limpieza y regeneración de la caché. Seguirá utilizando en memoria los valores antiguos guardados en `bootstrap/cache/config.php`.
+
+---
+
+### 3. Comandos de Mantenimiento y Refresco del Servidor
+
+Cada vez que se modifiquen variables en `.env`, se agreguen rutas o se actualice código en el servidor, ejecuta:
+
+```bash
+cd ~/inf513-proyecto2/backend
+php artisan config:clear
+php artisan config:cache
+php artisan route:clear
+php artisan route:cache
+php artisan view:clear
+php artisan view:cache
+```
+
+| Comando | Función y Motivo Técnico |
+| :--- | :--- |
+| `php artisan config:clear` | **Elimina la configuración compilada obsoleta** borrando `bootstrap/cache/config.php`. Obliga a Laravel a soltar los valores viejos en memoria. |
+| `php artisan config:cache` | **Lee el nuevo `.env` y genera un nuevo archivo precompilado optimizado**, asegurando que las nuevas credenciales entren en vigencia a máxima velocidad. |
+| `php artisan route:clear` | **Elimina el mapa de rutas previo**, garantizando que endpoints recién añadidos o modificados no sean ignorados. |
+| `php artisan route:cache` | **Compila las rutas en un árbol estático de decisión**, reduciendo drásticamente el tiempo de respuesta de cada petición de la API (hasta 5x más rápido). |
+| `php artisan view:clear` / `view:cache` | **Limpia y precompila las plantillas Blade** (como las cartas en PDF y correos de convocatoria) para evitar discrepancias de renderizado. |
+
+
 
 

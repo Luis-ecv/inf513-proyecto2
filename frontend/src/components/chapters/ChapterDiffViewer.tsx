@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { VersionCapitulo } from '../../types';
 import { computeLineDiff } from '../../utils/diffUtils';
 import { useTheme } from '../../context/ThemeContext';
+import api from '../../services/api';
 import { 
   GitCompare, Maximize2, Minimize2, Download, Clock, 
   User, CheckCircle2, FileText, ArrowRight, Layers 
@@ -15,6 +16,28 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
   const { mode } = useTheme();
   const isDark = mode === 'dark';
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDescargar = async () => {
+    if (!targetVersion) return;
+    setDownloading(true);
+    try {
+      const res = await api.get(`/capitulos/versiones/${targetVersion.id}/descargar`, {
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(res.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = targetVersion.nombre_archivo;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error al descargar versión de capítulo:', err);
+      window.alert('No se pudo descargar el documento digital.');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   // Ordenar de más antigua a más reciente para el orden lógico de comparación
   const sortedAsc = useMemo(() => {
@@ -175,16 +198,16 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
 
           <div className="flex items-center gap-3 text-[11px]">
             {targetVersion?.archivo_ruta && (
-              <a
-                href={`/storage/${targetVersion.archivo_ruta}`}
-                target="_blank"
-                rel="noreferrer"
-                download
-                className="flex items-center gap-1.5 text-sistemas-cyan hover:underline font-bold"
+              <button
+                type="button"
+                onClick={handleDescargar}
+                disabled={downloading}
+                className="flex items-center gap-1.5 text-sistemas-cyan hover:underline font-bold disabled:opacity-50 cursor-pointer"
+                title="Descargar documento digital original"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Descargar {targetVersion.nombre_archivo}</span>
-              </a>
+                <span>{downloading ? 'Descargando...' : `Descargar ${targetVersion.nombre_archivo}`}</span>
+              </button>
             )}
           </div>
         </div>

@@ -16,6 +16,7 @@ use App\Services\ChapterStateMachineService;
 use App\Services\AuditBitacoraService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ChapterController extends Controller
 {
@@ -341,6 +342,24 @@ class ChapterController extends Controller
             'version' => $version->load('usuario:id,nombre_completo,username'),
             'capitulo' => $capitulo,
         ], 201);
+    }
+
+    /**
+     * Descarga segura del archivo digital original de una versión de capítulo (PDF, MD o TXT).
+     */
+    public function descargarVersion(Request $request, int $idVersion)
+    {
+        $version = VersionCapitulo::findOrFail($idVersion);
+
+        abort_if($request->user()?->esInvitado(), 403, 'El rol Invitado solo tiene permisos de visualización.');
+
+        abort_unless(
+            Storage::disk('public')->exists($version->archivo_ruta),
+            404,
+            'El documento de la versión no se encuentra disponible en el almacenamiento.'
+        );
+
+        return Storage::disk('public')->download($version->archivo_ruta, $version->nombre_archivo);
     }
 
     private function rechazarInvitado(Request $request): void
