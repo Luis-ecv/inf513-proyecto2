@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig(({ command }) => ({
   // En producción en el servidor TecnoWeb (Escenario A), la app se sirve desde el subdirectorio /inf513/grupo02sa/inf513-proyecto2/
   // En desarrollo local (command === 'serve'), la ruta base se mantiene en la raíz '/'
-  base: command === 'build' ? '/inf513/grupo02sa/inf513-proyecto2/' : '/',
+  base: command === 'build' ? '/inf513/grupo02sa/proyecto2/' : '/',
   plugins: [
     react(),
     tailwindcss(),
