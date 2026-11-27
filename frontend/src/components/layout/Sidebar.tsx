@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   LayoutDashboard, BookOpen, GitFork, FileText, Layers, 
   MessageSquare, Archive, Printer, BarChart3, ShieldCheck, 
-  Users, HelpCircle, CalendarCheck
+  Users, HelpCircle, CalendarCheck, X
 } from 'lucide-react';
 import type { MenuItem } from '../../types';
 import isotipoSistemas from '../../assets/branding/isotipo-sistemas.jpg';
@@ -24,7 +24,12 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   CalendarCheck,
 };
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const { menuItems, user } = useAuth();
 
   const renderIcon = (iconName?: string) => {
@@ -34,36 +39,56 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside
-      className="w-64 border-r flex flex-col justify-between transition-colors min-h-screen select-none shrink-0"
-      style={{
-        backgroundColor: 'var(--bg-sidebar)',
-        color: 'var(--text-sidebar)',
-        borderColor: 'var(--border-color)',
-      }}
-    >
-      <div className="flex flex-col">
-        {/* Cabecera Institucional con Isotipo Oficial de Sistemas */}
-        <div 
-          className="h-16 flex items-center px-4 border-b gap-3"
-          style={{ borderColor: 'rgba(255,255,255,0.08)' }}
-        >
-          <div className="relative w-9 h-9 rounded-lg overflow-hidden bg-white/10 p-1 flex items-center justify-center shrink-0 border border-white/10 shadow-sm">
-            <img 
-              src={isotipoSistemas} 
-              alt="Ingeniería en Sistemas - UAGRM" 
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <div className="min-w-0">
-            <div className="font-bold text-xs tracking-wide text-white truncate uppercase">
-              Sistemas <span style={{ color: '#009fe3' }}>FICCT</span>
+    <>
+      {/* Backdrop oscuro para móvil/tablet */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-auto w-64 border-r flex flex-col justify-between transition-transform duration-200 ease-in-out min-h-screen select-none shrink-0 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
+        }`}
+        style={{
+          backgroundColor: 'var(--bg-sidebar)',
+          color: 'var(--text-sidebar)',
+          borderColor: 'var(--border-color)',
+        }}
+      >
+        <div className="flex flex-col">
+          {/* Cabecera Institucional con Isotipo Oficial de Sistemas */}
+          <div 
+            className="h-16 flex items-center px-4 border-b gap-3"
+            style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+          >
+            <div className="relative w-9 h-9 rounded-lg overflow-hidden bg-white/10 p-1 flex items-center justify-center shrink-0 border border-white/10 shadow-sm">
+              <img 
+                src={isotipoSistemas} 
+                alt="Ingeniería en Sistemas - UAGRM" 
+                className="w-full h-full object-contain"
+              />
             </div>
-            <div className="text-[10px] tracking-wider text-slate-400 font-medium truncate uppercase">
-              UAGRM • Rediseño Curricular
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-xs tracking-wide text-white truncate uppercase">
+                Sistemas <span style={{ color: '#009fe3' }}>FICCT</span>
+              </div>
+              <div className="text-[10px] tracking-wider text-slate-400 font-medium truncate uppercase">
+                UAGRM • Rediseño Curricular
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              title="Cerrar menú"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-        </div>
 
         {/* Ficha del Usuario y Rol */}
         <div className="px-3 pt-3 pb-2">
@@ -107,6 +132,7 @@ export const Sidebar: React.FC = () => {
             <NavLink
               key={item.id}
               to={item.ruta}
+              onClick={onClose}
               className={({ isActive }) =>
                 `group flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 ${
                   isActive
@@ -145,5 +171,6 @@ export const Sidebar: React.FC = () => {
         </span>
       </div>
     </aside>
+    </>
   );
 };

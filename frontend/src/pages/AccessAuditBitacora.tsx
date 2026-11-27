@@ -115,15 +115,15 @@ export const AccessAuditBitacora: React.FC = () => {
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
       >
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
               Módulo 5 • Seguridad y Auditoría
             </span>
             <span className="text-xs text-slate-400 font-medium">Trazabilidad Inmutable (ADR-005)</span>
           </div>
           <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-500" />
-            Bitácora de Accesos y Seguridad
+            <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0" />
+            <span>Bitácora de Accesos y Seguridad</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Registro cronológico inalterable de inicios de sesión, intentos denegados y eventos del sistema.
@@ -132,7 +132,7 @@ export const AccessAuditBitacora: React.FC = () => {
 
         <button
           onClick={cargarBitacora}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-slate-700 dark:text-slate-300"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-slate-700 dark:text-slate-300 shrink-0"
           style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
         >
           <RotateCcw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-sistemas-cyan' : ''}`} />
@@ -142,20 +142,20 @@ export const AccessAuditBitacora: React.FC = () => {
 
       {/* 2. Registro principal de auditoría */}
       <div 
-        className="p-5 rounded-xl border shadow-xs space-y-4"
+        className="p-4 sm:p-5 rounded-xl border shadow-xs space-y-4"
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
       >
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-sistemas-cyan" />
+            <Filter className="w-4 h-4 text-sistemas-cyan shrink-0" />
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
               Filtros de Trazabilidad
             </h2>
           </div>
 
           {/* Selector de Filtros y Rango de Fechas */}
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2 text-xs w-full lg:w-auto">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <input
                 type="date"
                 value={fechaDesde}
@@ -177,13 +177,13 @@ export const AccessAuditBitacora: React.FC = () => {
 
             <button
               onClick={descargarBitacora}
-              className="px-3 py-1 rounded-lg border font-semibold flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-slate-700 dark:text-slate-300"
+              className="px-3 py-1 rounded-lg border font-semibold flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-slate-700 dark:text-slate-300 shrink-0"
               style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
             >
               <Download className="w-3.5 h-3.5" /> Exportar CSV
             </button>
 
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border" style={{ borderColor: 'var(--border-color)' }}>
+            <div className="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border" style={{ borderColor: 'var(--border-color)' }}>
               <button
                 onClick={() => handleFiltroCambio('')}
                 className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition cursor-pointer ${

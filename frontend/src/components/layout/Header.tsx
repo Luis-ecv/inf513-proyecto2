@@ -3,14 +3,18 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme, type FontSize } from '../../context/ThemeContext';
 import { 
   Search, Sun, Moon, Sparkles, Type, Eye, LogOut, 
-  BookOpen, Layers, Archive, FileText, X, User as UserIcon
+  BookOpen, Layers, Archive, FileText, X, User as UserIcon, Menu
 } from 'lucide-react';
 import api from '../../services/api';
 import type { SearchResults } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { EditProfileModal } from '../profile/EditProfileModal';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
   const { 
     theme, setTheme, mode, toggleMode, isAutoMode, setIsAutoMode,
@@ -93,15 +97,28 @@ export const Header: React.FC = () => {
 
   return (
     <header 
-      className="sticky top-0 z-40 h-16 border-b px-4 lg:px-6 flex items-center justify-between transition-colors backdrop-blur-md shrink-0"
+      className="sticky top-0 z-40 h-16 border-b px-3 sm:px-4 lg:px-6 flex items-center justify-between transition-colors backdrop-blur-md shrink-0 gap-2"
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--border-color)',
         color: 'var(--text-main)',
       }}
     >
-      {/* 1. Buscador Global del Negocio tipo Command-Bar (Requisito 9) */}
-      <div className="relative w-72 sm:w-96" ref={searchRef}>
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 mr-1 sm:mr-3">
+        {/* Botón Hamburguesa para Móvil y Tablet */}
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="lg:hidden p-2 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300 shrink-0 cursor-pointer"
+          style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
+          title="Abrir menú de navegación"
+          aria-label="Abrir menú de navegación"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+
+        {/* 1. Buscador Global del Negocio tipo Command-Bar (Requisito 9) */}
+        <div className="relative w-full max-w-xs sm:max-w-sm" ref={searchRef}>
         <div className="relative flex items-center">
           <Search className="absolute left-3 w-4 h-4 text-slate-400" />
           <input
@@ -246,12 +263,13 @@ export const Header: React.FC = () => {
           </div>
         )}
       </div>
+      </div>
 
       {/* 2. Controles de Tema, Día/Noche y Accesibilidad (Requisito 5) */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* Selector Segmentado de Temas */}
         <div 
-          className="flex items-center border rounded-lg p-0.5 text-xs shadow-xs"
+          className="hidden md:flex items-center border rounded-lg p-0.5 text-xs shadow-xs"
           style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-app)' }}
         >
           <button

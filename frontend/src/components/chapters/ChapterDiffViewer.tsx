@@ -132,15 +132,16 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
         </div>
 
         {/* Selectores de Comparación y Botón Pantalla Completa */}
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full lg:w-auto min-w-0">
           {sortedAsc.length > 1 && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-slate-400 text-[11px] font-medium">Comparar:</span>
+            <div className="flex flex-wrap items-center gap-2 text-xs min-w-0 max-w-full">
+              <span className="text-slate-400 text-[11px] font-medium shrink-0">Comparar:</span>
               <select
                 value={baseVersionId}
                 onChange={(e) => setBaseVersionId(Number(e.target.value))}
-                className="px-2.5 py-1 rounded-lg border font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-sky-500"
+                className="px-2.5 py-1 rounded-lg border font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 max-w-[140px] sm:max-w-[200px] md:max-w-[260px] truncate cursor-pointer"
                 style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                title={sortedAsc.find(v => v.id === baseVersionId)?.nombre_archivo}
               >
                 {sortedAsc.map((v) => (
                   <option key={`base-${v.id}`} value={v.id}>
@@ -154,8 +155,9 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
               <select
                 value={targetVersionId}
                 onChange={(e) => setTargetVersionId(Number(e.target.value))}
-                className="px-2.5 py-1 rounded-lg border font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-sky-500"
+                className="px-2.5 py-1 rounded-lg border font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 max-w-[140px] sm:max-w-[200px] md:max-w-[260px] truncate cursor-pointer"
                 style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
+                title={sortedAsc.find(v => v.id === targetVersionId)?.nombre_archivo}
               >
                 {sortedAsc.map((v) => (
                   <option key={`target-${v.id}`} value={v.id}>
@@ -169,7 +171,7 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
           {/* Botón de Pantalla Completa */}
           <button
             onClick={() => setIsFullScreen(!isFullScreen)}
-            className="p-1.5 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition ml-auto text-slate-600 dark:text-slate-300"
+            className="p-1.5 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition ml-auto text-slate-600 dark:text-slate-300 cursor-pointer"
             style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
             title={isFullScreen ? 'Salir de pantalla completa' : 'Ver a pantalla completa'}
           >
@@ -202,11 +204,13 @@ export const ChapterDiffViewer: React.FC<ChapterDiffViewerProps> = ({ versiones 
                 type="button"
                 onClick={handleDescargar}
                 disabled={downloading}
-                className="flex items-center gap-1.5 text-sistemas-cyan hover:underline font-bold disabled:opacity-50 cursor-pointer"
-                title="Descargar documento digital original"
+                className="flex items-center gap-1.5 text-sistemas-cyan hover:underline font-bold disabled:opacity-50 cursor-pointer max-w-full"
+                title={`Descargar ${targetVersion.nombre_archivo}`}
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>{downloading ? 'Descargando...' : `Descargar ${targetVersion.nombre_archivo}`}</span>
+                <Download className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+                  {downloading ? 'Descargando...' : `Descargar ${targetVersion.nombre_archivo}`}
+                </span>
               </button>
             )}
           </div>
