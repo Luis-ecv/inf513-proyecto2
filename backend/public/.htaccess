@@ -6,7 +6,7 @@
     RewriteEngine On
 
     # Base obligatoria para el subdirectorio del proyecto en TecnoWeb
-    RewriteBase /inf513/grupo02sa/inf513-proyecto2/
+    RewriteBase /inf513/grupo02sa/proyecto2/
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
