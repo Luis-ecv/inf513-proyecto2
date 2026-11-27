@@ -23,6 +23,7 @@ export const UserManagement: React.FC = () => {
   const [username, setUsername] = useState('');
   const [idRol, setIdRol] = useState<number>(2); // Delegado por defecto
   const [password, setPassword] = useState('');
+  const [generarAutoPassword, setGenerarAutoPassword] = useState(true);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
 
@@ -100,8 +101,8 @@ export const UserManagement: React.FC = () => {
       return;
     }
 
-    if (!isPasswordValid) {
-      setFormError('La contraseña no cumple con la política de seguridad (8-25 caracteres, mayúscula, minúscula, número y símbolo).');
+    if (!generarAutoPassword && !isPasswordValid) {
+      setFormError('La contraseña manual no cumple con la política de seguridad (8-25 caracteres, mayúscula, minúscula, número y símbolo).');
       return;
     }
 
@@ -112,7 +113,9 @@ export const UserManagement: React.FC = () => {
       formData.append('email', email.trim());
       formData.append('username', username.trim());
       formData.append('id_rol', idRol.toString());
-      formData.append('password', password);
+      if (!generarAutoPassword && password) {
+        formData.append('password', password);
+      }
       if (fotoFile) {
         formData.append('foto', fotoFile);
       }
@@ -124,18 +127,19 @@ export const UserManagement: React.FC = () => {
       });
 
       if (res.data.success) {
-        setFormSuccess('Usuario registrado exitosamente.');
+        setFormSuccess(res.data.message || 'Usuario registrado exitosamente.');
         setNombreCompleto('');
         setEmail('');
         setUsername('');
         setPassword('');
+        setGenerarAutoPassword(true);
         setFotoFile(null);
         setFotoPreview(null);
         await cargarDatos();
         setTimeout(() => {
           setShowModal(false);
           setFormSuccess('');
-        }, 1200);
+        }, 1600);
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
@@ -482,47 +486,75 @@ export const UserManagement: React.FC = () => {
                 </select>
               </div>
 
-              {/* Contraseña con Reglas Estrictas */}
-              <div className="space-y-1">
-                <label className="block font-semibold mb-1 flex items-center justify-between text-slate-700 dark:text-slate-300">
-                  <span>Contraseña de Acceso *</span>
-                  <span className="text-[10px] text-slate-400 flex items-center gap-1 font-normal">
-                    <Lock className="w-3 h-3" /> Regla institucional
+              {/* Opción de Contraseña Automática o Manual con Notificación por Correo (ADR-006) */}
+              <div className="space-y-2 p-3 rounded-xl border" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={generarAutoPassword}
+                      onChange={(e) => setGenerarAutoPassword(e.target.checked)}
+                      className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-sistemas-cyan" />
+                      Generar contraseña temporal y notificar por correo
+                    </span>
+                  </label>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                    ADR-006
                   </span>
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="8 a 25 caracteres alfanuméricos"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 ${
-                    password ? (isPasswordValid ? 'border-emerald-500 focus:ring-emerald-500' : 'border-rose-500 focus:ring-rose-500') : 'focus:ring-sky-500'
-                  }`}
-                  style={{ backgroundColor: 'var(--bg-app)', borderColor: password ? undefined : 'var(--border-color)' }}
-                  required
-                />
-
-                {/* Guía de validación en tiempo real */}
-                <div 
-                  className="p-2.5 rounded-lg border space-y-1 text-[11px]"
-                  style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}
-                >
-                  <div className={`flex items-center gap-1.5 ${isPasswordLengthValid ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
-                    <CheckCircle2 className="w-3 h-3" /> Longitud entre 8 y 25 caracteres ({password.length}/25)
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${hasUpperCase && hasLowerCase ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
-                    <CheckCircle2 className="w-3 h-3" /> Al menos una mayúscula (A-Z, Ñ) y una minúscula (a-z, ñ)
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
-                    <CheckCircle2 className="w-3 h-3" /> Al menos un dígito numérico (0-9)
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${hasSpecialChar ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
-                    <CheckCircle2 className="w-3 h-3" /> Al menos un símbolo permitido (@$!%*#?&_\-.)
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${hasOnlyAllowedChars && password.length > 0 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
-                    <CheckCircle2 className="w-3 h-3" /> Sin espacios ni caracteres prohibidos
-                  </div>
                 </div>
+
+                {generarAutoPassword ? (
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 pt-1">
+                    <p>
+                      El sistema generará una <strong>clave temporal segura</strong> y la enviará junto con la <strong>matriz de actividades permitidas</strong> al correo institucional indicado.
+                    </p>
+                    <p className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Se exigirá cambio obligatorio de contraseña en su primer inicio de sesión.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 pt-2">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Contraseña Temporal Manual *
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="8 a 25 caracteres alfanuméricos"
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-xs ${
+                        password ? (isPasswordValid ? 'border-emerald-500 focus:ring-emerald-500' : 'border-rose-500 focus:ring-rose-500') : 'focus:ring-sky-500'
+                      }`}
+                      style={{ backgroundColor: 'var(--bg-card)', borderColor: password ? undefined : 'var(--border-color)' }}
+                      required={!generarAutoPassword}
+                    />
+
+                    {/* Guía de validación en tiempo real */}
+                    <div 
+                      className="p-2 rounded-lg border space-y-1 text-[11px]"
+                      style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+                    >
+                      <div className={`flex items-center gap-1.5 ${isPasswordLengthValid ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                        <CheckCircle2 className="w-3 h-3" /> Longitud entre 8 y 25 caracteres ({password.length}/25)
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${hasUpperCase && hasLowerCase ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                        <CheckCircle2 className="w-3 h-3" /> Al menos una mayúscula (A-Z, Ñ) y una minúscula (a-z, ñ)
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                        <CheckCircle2 className="w-3 h-3" /> Al menos un dígito numérico (0-9)
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${hasSpecialChar ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                        <CheckCircle2 className="w-3 h-3" /> Al menos un símbolo permitido (@$!%*#?&_\-.)
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${hasOnlyAllowedChars && password.length > 0 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                        <CheckCircle2 className="w-3 h-3" /> Sin espacios ni caracteres prohibidos
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Botones */}

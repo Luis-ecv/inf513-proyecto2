@@ -19,6 +19,7 @@ import { UserManagement } from './pages/UserManagement';
 import { Convocatorias } from './pages/Convocatorias';
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 import { ForceChangePasswordModal } from './components/auth/ForceChangePasswordModal';
+import { SessionTimeoutTracker } from './components/common/SessionTimeoutTracker';
 
 // Componente para proteger rutas privadas
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -48,6 +49,7 @@ export const AppContent: React.FC = () => {
         path="/"
         element={
           <ProtectedRoute>
+            <SessionTimeoutTracker />
             <ForceChangePasswordModal />
             <MainLayout />
           </ProtectedRoute>

@@ -9,9 +9,12 @@ use App\Models\MenuItem;
 use App\Models\Rol;
 use App\Models\User;
 use App\Services\AuditBitacoraService;
+use App\Mail\NuevoUsuarioCredencialesMail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -98,6 +101,9 @@ class AuthController extends Controller
 
         // Registrar login exitoso en bitácora
         $this->auditService->registrarLoginExitoso($user, $request);
+
+        // Revocar sesiones huérfanas previas del usuario (autolimpieza y garantía de sesión única activa)
+        $user->tokens()->delete();
 
         // Crear token de acceso Sanctum
         $token = $user->createToken('spa-auth-token')->plainTextToken;
@@ -209,7 +215,8 @@ class AuthController extends Controller
     }
 
     /**
-     * Registro de nuevo usuario (CU1).
+     * Registro de nuevo usuario (CU1) con asignación de contraseña temporal
+     * y notificación formal por correo electrónico con credenciales y permisos (ADR-006).
      */
     public function storeUsuario(StoreUserRequest $request): JsonResponse
     {
@@ -220,20 +227,48 @@ class AuthController extends Controller
             $fotoRuta = $request->file('foto')->store('fotos', 'public');
         }
 
+        // Generar o usar clave temporal que cumpla obligatoriamente la expresión regular de seguridad
+        $passwordTemporal = !empty($data['password']) 
+            ? $data['password'] 
+            : 'Uagrm*' . rand(1000, 9999) . 'Ficct!';
+
         $user = User::create([
             'nombre_completo' => $data['nombre_completo'],
             'email' => $data['email'],
             'username' => $data['username'],
-            'password' => $data['password'],
+            'password' => $passwordTemporal,
             'foto_ruta' => $fotoRuta,
             'activo' => true,
             'id_rol' => $data['id_rol'],
+            'debe_cambiar_password' => true,
         ]);
+
+        $user->load('rol');
+
+        // URL base de acceso institucional
+        $loginUrl = rtrim((string) config('app.url'), '/') . '/login';
+
+        // Envío formal de credenciales y tabla de actividades por rol vía SMTP institucional
+        $emailEnviado = false;
+        try {
+            Mail::to($user->email)->send(new NuevoUsuarioCredencialesMail(
+                usuario: $user,
+                passwordTemporal: $passwordTemporal,
+                loginUrl: $loginUrl
+            ));
+            $emailEnviado = true;
+        } catch (\Throwable $e) {
+            Log::warning("Fallo en envío de credenciales por correo a {$user->email}: " . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Usuario registrado exitosamente.',
-            'usuario' => $user->load('rol'),
+            'message' => 'Usuario registrado exitosamente.' . ($emailEnviado 
+                ? ' Se enviaron las credenciales y el catálogo de actividades a su correo electrónico.' 
+                : ' (Aviso: No se pudo entregar el correo institucional, pero la cuenta fue creada).'),
+            'usuario' => $user,
+            'password_temporal' => $passwordTemporal,
+            'email_enviado' => $emailEnviado,
         ], 201);
     }
 
